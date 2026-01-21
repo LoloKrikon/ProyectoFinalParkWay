@@ -116,6 +116,7 @@ body {
     justify-content: center;
     align-items: center;
     position: relative;
+    font-style: italic;
     background: radial-gradient(circle at center, #1f2937 0%, #0f1115 100%);
 }
 

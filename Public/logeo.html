@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OmniLog - Iniciar Sesión</title>
+    <title>ParkWay - Iniciar Sesión</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
@@ -27,8 +27,8 @@
     </script>
     <section id="login-view" class="view">
         <div class="landing-content">
-            <h1 class="logo-title">OmniLog</h1>
-            <p class="subtitle">Conecta tus mundos. Colecciona tus historias.</p>
+            <h1 class="logo-title">ParkWay</h1>
+            <p class="subtitle">Llegar tranquilo empieza por aparcar</p>
 
             <div class="auth-form">
                 <input type="email" id="email" class="auth-input" placeholder="Correo electrónico">
@@ -58,7 +58,7 @@
     </section>
 
     <script type="module">
-        import { auth, googleProvider } from './firebase-config.js';
+        import { auth, googleProvider } from './js/firebase-config.js';
         import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         const emailInput = document.getElementById('email');
