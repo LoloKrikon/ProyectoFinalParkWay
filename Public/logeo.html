@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OmniLog - Iniciar Sesión</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div id="error-banner" style="background: red; color: white; padding: 10px; text-align: center; display: none;">
+    </div>
+    <script>
+        window.onerror = function (msg, url, line, col, error) {
+            const banner = document.getElementById('error-banner');
+            banner.style.display = 'block';
+            banner.textContent = "Error: " + msg + " (Line " + line + ")";
+        };
+        if (window.location.protocol === 'file:') {
+            const banner = document.getElementById('error-banner');
+            banner.style.display = 'block';
+            banner.innerHTML = "⚠️ Estás abriendo esto como archivo local. Algunas funciones (como el inicio de sesión) pueden no funcionar. <br> Por favor, usa un servidor local (VS Code Live Server, Python, Node).";
+        }
+    </script>
+    <section id="login-view" class="view">
+        <div class="landing-content">
+            <h1 class="logo-title">OmniLog</h1>
+            <p class="subtitle">Conecta tus mundos. Colecciona tus historias.</p>
+
+            <div class="auth-form">
+                <input type="email" id="email" class="auth-input" placeholder="Correo electrónico">
+                <input type="password" id="password" class="auth-input" placeholder="Contraseña">
+                <button id="email-action-btn" class="primary-btn">Iniciar Sesión</button>
+            </div>
+
+            <button id="toggle-auth-mode" class="toggle-auth">¿No tienes cuenta? Regístrate</button>
+
+            <div class="auth-divider">O continúa con</div>
+
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                <button id="google-login-btn" class="google-btn">
+                    <i class="fa-brands fa-google"></i> Google
+                </button>
+
+                <div class="guest-container">
+                    <button id="guest-login-btn" class="secondary-btn">Acceder sin cuenta</button>
+                    <div id="guest-warning" class="auth-warning">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        No se guardarán tus cambios permanentemente.
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="background-ambient"></div>
+    </section>
+
+    <script type="module">
+        import { auth, googleProvider } from './firebase-config.js';
+        import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        const emailInput = document.getElementById('email');
+        const passInput = document.getElementById('password');
+        const actionBtn = document.getElementById('email-action-btn');
+        const toggleBtn = document.getElementById('toggle-auth-mode');
+        const googleBtn = document.getElementById('google-login-btn');
+        const guestBtn = document.getElementById('guest-login-btn');
+
+        let isRegisterMode = false;
+
+        // 1. Verificar si ya está logueado
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                window.location.href = 'plataformas.html';
+            }
+        });
+
+        // 2. Alternar entre Login y Registro
+        toggleBtn.addEventListener('click', () => {
+            isRegisterMode = !isRegisterMode;
+            if (isRegisterMode) {
+                actionBtn.textContent = "Crear Cuenta";
+                toggleBtn.textContent = "¿Ya tienes cuenta? Inicia Sesión";
+            } else {
+                actionBtn.textContent = "Iniciar Sesión";
+                toggleBtn.textContent = "¿No tienes cuenta? Regístrate";
+            }
+        });
+
+        // 3. Login/Registro con Correo
+        actionBtn.addEventListener('click', async () => {
+            const email = emailInput.value;
+            const password = passInput.value;
+
+            try {
+                if (isRegisterMode) {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                    alert("Cuenta creada con éxito.");
+                    // AuthStateChanged redirigirá automáticamente
+                } else {
+                    await signInWithEmailAndPassword(auth, email, password);
+                }
+            } catch (error) {
+                console.error(error);
+                let msg = "Error de autenticación";
+                if (error.code === 'auth/weak-password') msg = "La contraseña debe tener al menos 6 caracteres.";
+                if (error.code === 'auth/email-already-in-use') msg = "Este correo ya está registrado.";
+                if (error.code === 'auth/invalid-credential') msg = "Correo o contraseña incorrectos.";
+                alert(msg);
+            }
+        });
+
+        // 4. Google Login
+        googleBtn.addEventListener('click', () => {
+            signInWithPopup(auth, googleProvider).catch(e => alert(e.message));
+        });
+
+        // 5. Guest Login
+        guestBtn.addEventListener('click', () => {
+            localStorage.setItem('omnilog_guest', 'true');
+            window.location.href = 'plataformas.html';
+        });
+
+        // Efecto hover warning invitado
+        const warning = document.getElementById('guest-warning');
+        guestBtn.addEventListener('mouseenter', () => warning.classList.add('visible'));
+        guestBtn.addEventListener('mouseleave', () => warning.classList.remove('visible'));
+    </script>
+</body>
+
+</html>

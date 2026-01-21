@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OmniLog - Videojuegos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div id="app">
+        <section id="dashboard" class="view">
+            <header class="app-header">
+                <div class="header-left">
+                    <h2 class="mini-logo">OmniLog</h2>
+                </div>
+                <div class="header-right">
+                    <div class="user-profile">
+                        <span id="user-level">Cargando...</span>
+                        <div class="avatar"></div>
+                        <button id="profile-btn" class="icon-btn" title="Mi Perfil">
+                            <i class="fa-solid fa-user-gear"></i>
+                        </button>
+                        <button id="change-platform-btn" class="icon-btn" title="Cambiar Plataforma">
+                            <i class="fa-solid fa-layer-group"></i>
+                        </button>
+                        <button id="logout-btn" class="icon-btn" title="Cerrar Sesión">
+                            <i class="fa-solid fa-right-from-bracket"></i>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <nav class="category-nav">
+                <button class="nav-btn active" style="cursor: default;">Videojuegos</button>
+            </nav>
+
+            <div class="search-container">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" id="search-input" placeholder="Buscar videojuego...">
+            </div>
+
+            <div class="filters-bar">
+                <span class="filter-label">Filtrar por:</span>
+                <select id="genre-select" class="genre-select">
+                    <option value="all">Todos</option>
+                    <option value="action">Acción</option>
+                    <option value="adventure">Aventura</option>
+                    <option value="role-playing-games-rpg">RPG</option>
+                    <option value="shooter">Shooter</option>
+                    <option value="indie">Indie</option>
+                    <option value="strategy">Estrategia</option>
+                    <option value="sports">Deportes</option>
+                    <option value="racing">Carreras</option>
+                    <option value="simulation">Simulación</option>
+                </select>
+            </div>
+
+            <div class="status-bar">
+                <button class="status-btn active" data-status="all">Todos</button>
+                <button class="status-btn" data-status="watched">Jugados</button>
+                <button class="status-btn" data-status="unwatched">Por jugar</button>
+                <button class="status-btn" data-status="top_rated">Mejores Valorados</button>
+            </div>
+
+            <main class="content-grid" id="content-grid"></main>
+        </section>
+
+        <div id="detail-modal" class="modal hidden">
+            <div class="modal-content">
+                <span class="close-modal">&times;</span>
+                <div class="modal-layout">
+                    <div class="modal-poster-container">
+                        <img src="" alt="Poster" id="modal-poster" class="grayscale">
+                    </div>
+                    <div class="modal-info">
+                        <h2 id="modal-title">Título</h2>
+                        <div class="modal-meta">
+                            <span id="modal-year"></span>
+                            <span id="modal-genre" class="genre-badge"></span>
+                        </div>
+                        <p id="modal-description"></p>
+
+                        <div class="rating-section" id="rating-section">
+                            <h3>Tu Valoración</h3>
+                            <div class="stars-input">
+                                <i class="fa-regular fa-star" data-value="1"></i>
+                                <i class="fa-regular fa-star" data-value="2"></i>
+                                <i class="fa-regular fa-star" data-value="3"></i>
+                                <i class="fa-regular fa-star" data-value="4"></i>
+                                <i class="fa-regular fa-star" data-value="5"></i>
+                                <i class="fa-regular fa-star" data-value="6"></i>
+                                <i class="fa-regular fa-star" data-value="7"></i>
+                                <i class="fa-regular fa-star" data-value="8"></i>
+                                <i class="fa-regular fa-star" data-value="9"></i>
+                                <i class="fa-regular fa-star" data-value="10"></i>
+                            </div>
+                            <textarea id="comment-input" placeholder="¿Qué te pareció el juego?"></textarea>
+                            <button id="save-rating-btn" class="primary-btn">Guardar</button>
+                        </div>
+
+                        <div class="community-reviews hidden" id="community-reviews">
+                            <h3>Tus Notas</h3>
+                            <div class="user-review-display">
+                                <div class="review-score"><span id="display-score">0</span>/10</div>
+                                <p id="display-comment"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reusing Profile Modal logic from peliculas.html structure if needed for profile editing, but relying on <script> logic below -->
+        <!-- Just basic profile editing modal (same structure as peliculas.html but we need to ensure IDs dont clash if we were importing components, but here it is a separate page) -->
+        <div id="profile-modal" class="modal hidden">
+            <div class="modal-content profile-content">
+                <span class="close-profile">&times;</span>
+                <h2>Editar Perfil</h2>
+                <div class="profile-form">
+                    <div class="form-group">
+                        <label>Nombre de Usuario</label>
+                        <input type="text" id="profile-username" placeholder="Tu nombre">
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha de Nacimiento</label>
+                        <input type="date" id="profile-dob">
+                    </div>
+                    <div class="form-group">
+                        <label>Generos Favoritos</label>
+                        <div class="genre-checkboxes">
+                            <!-- Showing Generic/Movie genres here or should we adapt? Let's keep consistent with Profile logic which is global currently -->
+                            <label><input type="checkbox" value="action"> Acción</label>
+                            <label><input type="checkbox" value="adventure"> Aventura</label>
+                            <label><input type="checkbox" value="rpg"> RPG</label>
+                            <label><input type="checkbox" value="shooter"> Shooter</label>
+                            <label><input type="checkbox" value="strategy"> Estrategia</label>
+                            <label><input type="checkbox" value="sports"> Deportes</label>
+                        </div>
+                    </div>
+                    <button id="save-profile-btn" class="primary-btn">Guardar Cambios</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="public-profile-modal" class="modal hidden">
+            <div class="modal-content public-profile-content">
+                <span class="close-public-profile"
+                    style="position: absolute; top: 20px; right: 25px; cursor: pointer; color: grey; font-size: 2rem;">&times;</span>
+                <img src="" class="public-profile-avatar" id="public-avatar">
+                <div class="public-profile-info">
+                    <h2 class="public-profile-name" id="public-name"></h2>
+                    <div class="public-profile-meta">
+                        <span id="public-age"></span>
+                    </div>
+                    <div class="public-genres" id="public-genres"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { auth, db } from './firebase-config.js';
+        import { onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, where, getDocs, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // Configuración API RAWG
+        const API_KEY = 'c064e6d529924cab8b3c1dcd40f8ba64';
+        const BASE_URL = 'https://api.rawg.io/api';
+
+        // Estado
+        let appState = {
+            ratings: {},
+            filterType: 'game', // Always 'game' for this page
+            filterGenre: 'all',
+            filterStatus: 'all', // all, watched (jugados), unwatched (por jugar), top_rated
+            searchQuery: '',
+            page: 1,
+            isLoading: false
+        };
+
+        // Elementos DOM
+        const grid = document.getElementById('content-grid');
+        const userLevelText = document.getElementById('user-level');
+        const userAvatar = document.querySelector('.avatar');
+
+        // --- 1. Autenticación y Carga Inicial ---
+        const isGuest = localStorage.getItem('omnilog_guest');
+        let currentUserId = null;
+        let currentUserName = "Invitado";
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUserId = user.uid;
+                currentUserName = user.displayName || user.email.split('@')[0];
+                setupUserUI(currentUserName, user.photoURL);
+            } else if (isGuest) {
+                currentUserId = 'guest';
+                currentUserName = "Invitado";
+                setupUserUI("Invitado", null);
+            } else {
+                window.location.href = 'logeo.html';
+            }
+            subscribeToRatings();
+        });
+
+        // Suscripción a Firestore (Real-time)
+        function subscribeToRatings() {
+            const q = collection(db, "ratings");
+            onSnapshot(q, (snapshot) => {
+                const newRatings = {};
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    // Filter locally for games only to keep ratings object clean, though appState.filterType handles display
+                    if (data.type !== 'game') return;
+
+                    const ratingObj = { ...data, firestoreId: doc.id };
+                    if (!newRatings[data.id]) {
+                        newRatings[data.id] = [];
+                    }
+                    newRatings[data.id].push(ratingObj);
+                });
+                appState.ratings = newRatings;
+                fetchAndRender(true);
+            });
+        }
+
+        function setupUserUI(name, photo) {
+            userLevelText.textContent = name;
+            if (photo) {
+                userAvatar.style.background = `url('${photo}') center/cover`;
+            } else {
+                userAvatar.textContent = name.charAt(0).toUpperCase();
+                userAvatar.style.display = "flex";
+                userAvatar.style.alignItems = "center";
+                userAvatar.style.justifyContent = "center";
+                userAvatar.style.fontWeight = "bold";
+            }
+        }
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            localStorage.removeItem('omnilog_guest');
+            signOut(auth).then(() => window.location.href = 'logeo.html');
+        });
+
+        document.getElementById('change-platform-btn').addEventListener('click', () => {
+            window.location.href = 'plataformas.html';
+        });
+
+        // --- 2. Filtros ---
+        // Generos
+        document.getElementById('genre-select').addEventListener('change', (e) => {
+            appState.filterGenre = e.target.value;
+            appState.page = 1;
+            fetchAndRender(true);
+        });
+
+        // Status
+        document.querySelectorAll('.status-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.status-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                appState.filterStatus = btn.dataset.status;
+                appState.page = 1;
+                fetchAndRender(true);
+            });
+        });
+
+        // Buscador
+        let debounceTimer;
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                appState.searchQuery = e.target.value.trim();
+                appState.page = 1;
+                fetchAndRender(true);
+            }, 500);
+        });
+
+        // Scroll Infinito
+        window.addEventListener('scroll', () => {
+            if (appState.filterStatus === 'watched' || appState.filterStatus === 'top_rated') return;
+            const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+            if (scrollTop + clientHeight >= scrollHeight - 100 && !appState.isLoading) {
+                appState.page++;
+                fetchAndRender(false);
+            }
+        });
+
+        // --- 3. Lógica de Datos (API RAWG) ---
+        async function fetchAndRender(resetGrid = false) {
+            if (appState.isLoading) return;
+            appState.isLoading = true;
+
+            if (resetGrid) grid.innerHTML = '';
+
+            // Filtros Locales / Comunidad
+            if (appState.filterStatus === 'watched') {
+                renderLocalCollection();
+                appState.isLoading = false;
+                return;
+            } else if (appState.filterStatus === 'top_rated') {
+                renderCommunityTopRated();
+                appState.isLoading = false;
+                return;
+            }
+
+            // Construir URL RAWG
+            let url = `${BASE_URL}/games?key=${API_KEY}&page=${appState.page}&page_size=20`;
+
+            if (appState.searchQuery) {
+                url += `&search=${encodeURIComponent(appState.searchQuery)}`;
+            } else {
+                if (appState.filterGenre !== 'all') {
+                    url += `&genres=${appState.filterGenre}`;
+                }
+                // Ordenar por popularidad/metacritic si no hay búsqueda
+                url += `&ordering=-added`; // "Added" implies popularity in RAWG
+            }
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.results) {
+                    data.results.forEach(item => {
+                        // Check if *THIS* user has rated it
+                        const gameRatings = appState.ratings[item.id] || [];
+                        const userRating = gameRatings.find(r => r.userId === currentUserId);
+                        const isRated = !!userRating;
+
+                        // Si filtramos por "Por jugar" (unwatched) y ya está jugada (rated), saltar
+                        if (appState.filterStatus === 'unwatched' && isRated) return;
+
+                        // Map RAWG item to generic structure
+                        const mappedItem = {
+                            id: item.id,
+                            title: item.name,
+                            poster_path: item.background_image, // URL completa
+                            released: item.released,
+                            vote_average: item.metacritic ? (item.metacritic / 10) : 0, // 0-100 to 0-10
+                            genres: item.genres // Array of objects logic slightly different, handled in createCard/Modal
+                        };
+
+                        createCard(mappedItem, userRating);
+                    });
+                }
+            } catch (error) {
+                console.error("Error API:", error);
+            } finally {
+                appState.isLoading = false;
+            }
+        }
+
+        function renderLocalCollection() {
+            const allRatings = [];
+            Object.values(appState.ratings).forEach(gameRatings => {
+                if (Array.isArray(gameRatings)) {
+                    const myRating = gameRatings.find(r => r.userId === currentUserId);
+                    if (myRating) allRatings.push(myRating);
+                }
+            });
+
+            // Filters
+            const filtered = allRatings.filter(item => {
+                if (item.type !== 'game') return false;
+                // Basic Genre matching could be added if we store RAWG slugs in Firestore
+                // For simplicity, local collection assumes genre filter is loose or handled if we stored genres
+                return true;
+            });
+
+            // Sort by Date
+            filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+            filtered.forEach(createCardFromLocal);
+        }
+
+        function renderCommunityTopRated() {
+            const communityItems = [];
+            Object.values(appState.ratings).forEach(ratingsArray => {
+                if (!Array.isArray(ratingsArray) || ratingsArray.length === 0) return;
+                const first = ratingsArray[0];
+                if (first.type !== 'game') return;
+
+                const sum = ratingsArray.reduce((acc, r) => acc + r.score, 0);
+                const avg = sum / ratingsArray.length;
+
+                const item = { ...first, vote_average: avg };
+                communityItems.push(item);
+            });
+            communityItems.sort((a, b) => b.vote_average - a.vote_average);
+            communityItems.forEach(createCardFromLocal);
+        }
+
+        function createCard(item, existingRating = null) {
+            let isRated = false;
+            let score = 0;
+            let displayScore = "0";
+
+            if (existingRating) {
+                isRated = true;
+                score = existingRating.score;
+                displayScore = score;
+            } else {
+                const gameRatings = appState.ratings[item.id] || [];
+                const myRating = gameRatings.find(u => u.userId === currentUserId);
+
+                if (myRating) {
+                    isRated = true;
+                    score = myRating.score;
+                    displayScore = score;
+                } else if (gameRatings.length > 0) {
+                    const sum = gameRatings.reduce((acc, r) => acc + r.score, 0);
+                    const avg = sum / gameRatings.length;
+                    displayScore = avg.toFixed(1);
+                    if (displayScore.endsWith('.0')) displayScore = displayScore.slice(0, -2);
+                }
+            }
+
+            // Allow RAWG global MetaCritic fallback if no community rating exists?
+            // User requested: "quiero que ... salgan las valoradas.. aun que.. no la haya evaluado" -> Implies Community.
+            // But if Community is 0, user might want to see Metacritic? 
+            // Previous instruction was "0 hasta que alguien valore". So we stick to 0/Community.
+
+            const title = item.title || item.name;
+            // RAWG images can be null
+            const posterPath = item.poster_path;
+            if (!posterPath) return; // Skip if no image
+
+            const card = document.createElement('div');
+            card.className = 'content-item';
+            // Custom style for game cards to handle 16:9 images better if needed, but 'object-fit: cover' in CSS usually handles it.
+            // We'll leave class as 'content-item' which has standard styles. width is fixed, height auto.
+            // Actually main css for .content-item img is height: 300px object-fit: cover. This works for 16:9 too (crops sides).
+
+            card.innerHTML = `
+                <img src="${posterPath}" class="${isRated ? '' : 'grayscale'}" alt="${title}">
+                <div class="item-status">
+                    <h4>${title}</h4>
+                    <small>${(isRated || parseFloat(displayScore) > 0) ? '⭐ ' + displayScore + '/10' : 'Sin valorar'}</small>
+                </div>
+            `;
+
+            // Pass Full Item
+            card.addEventListener('click', () => openModal(item));
+            grid.appendChild(card);
+        }
+
+        function createCardFromLocal(localItem) {
+            // Reconstruct item for modal
+            const item = {
+                id: localItem.id,
+                title: localItem.title,
+                name: localItem.title,
+                poster_path: localItem.poster_path, // Full URL stored in DB
+                // genre_ids: localItem.genre_ids,
+                overview: localItem.overview,
+                released: localItem.year ? localItem.year + '-01-01' : null
+            };
+            createCard(item);
+        }
+
+        // --- 4. Modal ---
+        const modal = document.getElementById('detail-modal');
+        let currentItem = null;
+        let currentRating = 0;
+        let editingReviewId = null;
+
+        document.querySelector('.close-modal').onclick = () => modal.classList.add('hidden');
+        window.onclick = (e) => { if (e.target == modal) modal.classList.add('hidden'); };
+
+        async function openModal(item) {
+            currentItem = item;
+
+            // Fetch Details to get description if missing (RAWG list doesn't have good descriptions)
+            // If it came from Local, it might have overview. If from API list, it doesn't.
+            let description = item.overview;
+
+            if (!description) {
+                // Fetch full details
+                try {
+                    const res = await fetch(`${BASE_URL}/games/${item.id}?key=${API_KEY}`);
+                    const details = await res.json();
+                    // description_raw is plain text
+                    description = details.description_raw || "Sin descripción disponible.";
+                    currentItem.overview = description; // Update local obj for saving
+                } catch (e) {
+                    description = "No se pudo cargar la descripción.";
+                }
+            }
+
+            const gameRatings = appState.ratings[item.id] || [];
+            const myRating = gameRatings.find(r => r.userId === currentUserId);
+
+            document.getElementById('modal-poster').src = item.poster_path || '';
+            document.getElementById('modal-poster').className = myRating ? '' : 'grayscale';
+            document.getElementById('modal-title').textContent = item.title || item.name;
+            document.getElementById('modal-description').textContent = description;
+
+            const date = item.released || '????';
+            document.getElementById('modal-year').textContent = date.split('-')[0];
+
+            const ratingSection = document.getElementById('rating-section');
+            const communitySection = document.getElementById('community-reviews');
+
+            // Render Reviews
+            communitySection.innerHTML = '<h3>Valoraciones de la Comunidad</h3><div class="reviews-container"></div>';
+            const container = communitySection.querySelector('.reviews-container');
+
+            if (gameRatings.length > 0) {
+                communitySection.classList.remove('hidden');
+                gameRatings.forEach(r => {
+                    const div = document.createElement('div');
+                    div.className = 'review-item';
+                    if (r.userId === currentUserId) div.classList.add('my-review');
+
+                    let deleteHtml = '';
+                    if (r.userId === currentUserId && !isGuest) {
+                        deleteHtml = `
+                            <div style="display:flex; gap:5px;">
+                                <button class="delete-icon-btn" style="color: #6366f1;" onclick="editReview('${item.id}')"><i class="fa-solid fa-pen"></i></button>
+                                <button class="delete-icon-btn" onclick="deleteReview('${item.id}', '${r.userId}')"><i class="fa-solid fa-trash"></i></button>
+                            </div>`;
+                    }
+
+                    div.innerHTML = `
+                        <div class="review-header">
+                             <div class="review-avatar-container">
+                                <img src="${r.userPhoto || ''}" class="review-avatar" 
+                                     data-name="${r.userName || 'Anónimo'}" 
+                                     data-photo="${r.userPhoto || ''}"
+                                     onclick="viewPublicProfile('${r.userId}', this.dataset.name, this.dataset.photo)" 
+                                     onerror="this.src='https://ui-avatars.com/api/?name=${r.userName}&background=random'">
+                                <span class="reviewer-name">${r.userName || 'Anónimo'}</span>
+                            </div>
+                            <span class="review-stars">⭐ ${r.score}/10</span>
+                            ${deleteHtml}
+                        </div>
+                        <p class="review-comment">${r.comment || ''}</p>
+                        <small class="review-date">${new Date(r.date).toLocaleDateString()}</small>
+                    `;
+                    container.appendChild(div);
+                });
+            } else {
+                communitySection.classList.add('hidden');
+            }
+
+            if (myRating) {
+                ratingSection.classList.add('hidden');
+            } else {
+                ratingSection.classList.remove('hidden');
+                document.getElementById('comment-input').value = '';
+                currentRating = 0;
+                editingReviewId = null;
+                document.getElementById('save-rating-btn').textContent = "Guardar";
+                updateStarsUI(0);
+            }
+
+            // Keyboard Save
+            document.getElementById('comment-input').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    document.getElementById('save-rating-btn').click();
+                }
+            });
+
+            modal.classList.remove('hidden');
+        }
+
+        // Estrellas
+        const stars = document.querySelectorAll('.stars-input i');
+        stars.forEach(star => {
+            star.addEventListener('click', () => {
+                currentRating = parseInt(star.dataset.value);
+                updateStarsUI(currentRating);
+            });
+        });
+
+        function updateStarsUI(rating) {
+            stars.forEach(s => {
+                const val = parseInt(s.dataset.value);
+                if (val <= rating) { s.classList.remove('fa-regular'); s.classList.add('fa-solid', 'active'); }
+                else { s.classList.remove('fa-solid', 'active'); s.classList.add('fa-regular'); }
+            });
+        }
+
+        // Guardar
+        document.getElementById('save-rating-btn').addEventListener('click', async () => {
+            if (isGuest) return alert("Invitados no pueden guardar.");
+            if (currentRating === 0) return alert("¡Puntúa primero!");
+
+            const title = currentItem.title || currentItem.name;
+            const date = currentItem.released || '????';
+
+            const ratingData = {
+                score: currentRating,
+                comment: document.getElementById('comment-input').value,
+                date: new Date().toISOString(),
+                userName: currentUserName,
+                userPhoto: auth.currentUser.photoURL
+            };
+
+            const saveBtn = document.getElementById('save-rating-btn');
+            saveBtn.disabled = true;
+
+            try {
+                if (editingReviewId) {
+                    await updateDoc(doc(db, "ratings", editingReviewId), ratingData);
+                } else {
+                    const newRating = {
+                        ...ratingData,
+                        id: currentItem.id, // ID is RAWG ID (integer)
+                        title: title,
+                        poster_path: currentItem.poster_path, // Full RAWG URL
+                        overview: currentItem.overview, // Stored description
+                        type: 'game', // IMPORTANT
+                        year: date.split('-')[0],
+                        userId: currentUserId,
+                    };
+                    await addDoc(collection(db, "ratings"), newRating);
+                }
+                modal.classList.add('hidden');
+            } catch (e) {
+                console.error("Error save:", e);
+                alert("Error al guardar.");
+            } finally {
+                saveBtn.disabled = false;
+            }
+        });
+
+        // Edit Function
+        window.editReview = function (gameId) {
+            const list = appState.ratings[gameId];
+            const myRating = list.find(r => r.userId === currentUserId);
+            if (!myRating) return;
+
+            currentRating = myRating.score;
+            updateStarsUI(currentRating);
+            document.getElementById('comment-input').value = myRating.comment || '';
+            editingReviewId = myRating.firestoreId;
+
+            document.getElementById('save-rating-btn').textContent = "Actualizar";
+            document.getElementById('rating-section').classList.remove('hidden');
+            document.getElementById('community-reviews').classList.add('hidden');
+        };
+
+        // Delete Logic
+        window.deleteReview = function (gameId, userId) {
+            if (isGuest) return;
+            const list = appState.ratings[gameId];
+            const ratingToDelete = list.find(r => r.userId === currentUserId);
+            if (!ratingToDelete) return;
+            if (!confirm("¿Borrar reseña?")) return;
+
+            if (ratingToDelete.firestoreId) {
+                deleteDoc(doc(db, "ratings", ratingToDelete.firestoreId))
+                    .then(() => {
+                        const ratingSection = document.getElementById('rating-section');
+                        const communitySection = document.getElementById('community-reviews');
+                        ratingSection.classList.remove('hidden');
+                        communitySection.classList.add('hidden');
+                        document.getElementById('comment-input').value = '';
+                        currentRating = 0;
+                        updateStarsUI(0);
+                    })
+                    .catch(e => alert(e.message));
+            }
+        };
+
+        // Profile Logic (reused basic logic)
+        const profileModal = document.getElementById('profile-modal');
+        const profileBtn = document.getElementById('profile-btn');
+        const closeProfile = document.querySelector('.close-profile');
+        const saveProfileBtn = document.getElementById('save-profile-btn');
+
+        profileBtn.addEventListener('click', async () => {
+            if (isGuest) return alert("Inicia sesión para editar.");
+            document.getElementById('profile-username').value = currentUserName;
+            // Basic fetch logic for existing profile data can be added here mirroring peliculas.html
+            profileModal.classList.remove('hidden');
+        });
+        closeProfile.onclick = () => profileModal.classList.add('hidden');
+        saveProfileBtn.addEventListener('click', async () => {
+            const newName = document.getElementById('profile-username').value.trim();
+            if (newName && newName !== currentUserName) {
+                await updateProfile(auth.currentUser, { displayName: newName });
+                currentUserName = newName;
+                setupUserUI(currentUserName, auth.currentUser.photoURL);
+            }
+            profileModal.classList.add('hidden');
+        });
+
+        // Public Profile Logic
+        const publicModal = document.getElementById('public-profile-modal');
+        const closePublic = document.querySelector('.close-public-profile');
+        closePublic.onclick = () => publicModal.classList.add('hidden');
+        window.onclick = (e) => {
+            if (e.target == publicModal) publicModal.classList.add('hidden');
+            if (e.target == modal) modal.classList.add('hidden');
+        }
+
+        window.viewPublicProfile = async function (targetUserId, fallbackName, fallbackPhoto) {
+            // Populate basic info immediately
+            document.getElementById('public-name').textContent = fallbackName || 'Usuario';
+            document.getElementById('public-avatar').src = fallbackPhoto || `https://ui-avatars.com/api/?name=${fallbackName}&background=random`;
+            document.getElementById('public-age').textContent = '';
+            document.getElementById('public-genres').innerHTML = '';
+
+            publicModal.classList.remove('hidden');
+
+            try {
+                const docRef = doc(db, "users", targetUserId);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (data.birthdate) {
+                        const age = new Date().getFullYear() - new Date(data.birthdate).getFullYear();
+                        document.getElementById('public-age').textContent = `${age} años`;
+                    }
+                    if (data.genres && data.genres.length > 0) {
+                        const container = document.getElementById('public-genres');
+                        data.genres.forEach(g => {
+                            const span = document.createElement('span');
+                            span.className = 'genre-badge';
+                            span.textContent = g.toUpperCase();
+                            container.appendChild(span);
+                        });
+                    }
+                }
+            } catch (e) {
+                console.log("Error fetching public profile details", e);
+            }
+        };
+
+    </script>
+</body>
+
+</html>

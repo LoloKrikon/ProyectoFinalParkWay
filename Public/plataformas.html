@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OmniLog - Elige Plataformas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <section id="platform-view" class="view">
+        <div class="landing-content">
+            <div style="position: absolute; top: 2rem; right: 2rem; z-index: 10;">
+                <button id="logout-btn" class="secondary-btn"
+                    style="background: rgba(0,0,0,0.5); border-color: rgba(255,255,255,0.2);">
+                    <i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión
+                </button>
+            </div>
+            <h2 style="font-size: 2.5rem; margin-bottom: 2rem;">¿Qué quieres ver hoy?</h2>
+
+            <div class="platforms-grid" style="grid-template-columns: repeat(2, 1fr); max-width: 600px;">
+                <a href="peliculas.html" class="platform-card"
+                    style="text-decoration: none; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; aspect-ratio: 1/1;">
+                    <div class="platform-icon" style="font-size: 4rem; margin-bottom: 1rem;"><i
+                            class="fa-solid fa-film"></i></div>
+                    <h3>Películas / Series</h3>
+                </a>
+                <a href="videojuegos.html" class="platform-card"
+                    style="text-decoration: none; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; aspect-ratio: 1/1;">
+                    <div class="platform-icon" style="font-size: 4rem; margin-bottom: 1rem;"><i
+                            class="fa-solid fa-gamepad"></i></div>
+                    <h3>Videojuegos</h3>
+                </a>
+            </div>
+        </div>
+        <div class="background-ambient"></div>
+    </section>
+
+    <script type="module">
+        import { auth } from './firebase-config.js';
+        import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        // Verificar sesión
+        const isGuest = localStorage.getItem('omnilog_guest');
+
+        onAuthStateChanged(auth, (user) => {
+            if (!user && !isGuest) {
+                window.location.href = 'logeo.html'; // Si no hay usuario ni es invitado, fuera
+            }
+        });
+
+        // Logout Logic
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', async () => {
+                try {
+                    await signOut(auth);
+                } catch (error) {
+                    console.error("Error signing out:", error);
+                } finally {
+                    localStorage.removeItem('omnilog_guest');
+                    window.location.href = 'logeo.html';
+                }
+            });
+        }
+
+        // Login check is enough. Navigation is handled by <a href> tags directly.
+        // Clearing potentially old local storage to avoid confusion, though not strictly necessary.
+        localStorage.removeItem('omnilog_platforms');
+    </script>
+</body>
+
+</html>

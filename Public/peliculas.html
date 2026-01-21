@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OmniLog - Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div id="app">
+        <section id="dashboard" class="view">
+            <header class="app-header">
+                <div class="header-left">
+                    <h2 class="mini-logo">OmniLog</h2>
+                </div>
+                <div class="header-right">
+                    <div class="user-profile">
+                        <span id="user-level">Cargando...</span>
+                        <div class="avatar"></div>
+                        <button id="profile-btn" class="icon-btn" title="Mi Perfil">
+                            <i class="fa-solid fa-user-gear"></i>
+                        </button>
+                        <button id="change-platform-btn" class="icon-btn" title="Cambiar Plataforma">
+                            <i class="fa-solid fa-layer-group"></i>
+                        </button>
+                        <button id="logout-btn" class="icon-btn" title="Cerrar Sesión">
+                            <i class="fa-solid fa-right-from-bracket"></i>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <nav class="category-nav">
+                <button class="nav-btn active" data-type="movie">Películas</button>
+                <button class="nav-btn" data-type="series">Series</button>
+            </nav>
+
+            <div class="search-container">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" id="search-input" placeholder="Buscar por nombre...">
+            </div>
+
+            <div class="filters-bar">
+                <span class="filter-label">Filtrar por:</span>
+                <select id="genre-select" class="genre-select">
+                    <option value="all">Todos</option>
+                    <option value="action">Acción</option>
+                    <option value="drama">Drama</option>
+                    <option value="scifi">Ciencia Ficción</option>
+                    <option value="horror">Terror</option>
+                    <option value="comedy">Comedia</option>
+                    <option value="romance">Romance</option>
+                </select>
+            </div>
+
+            <div class="status-bar">
+                <button class="status-btn active" data-status="all">Todos</button>
+                <button class="status-btn" data-status="watched">Vistas</button>
+                <button class="status-btn" data-status="unwatched">Por ver</button>
+                <button class="status-btn" data-status="top_rated">Mejores Valoradas</button>
+            </div>
+
+            <main class="content-grid" id="content-grid"></main>
+        </section>
+
+        <div id="detail-modal" class="modal hidden">
+            <div class="modal-content">
+                <span class="close-modal">&times;</span>
+                <div class="modal-layout">
+                    <div class="modal-poster-container">
+                        <img src="" alt="Poster" id="modal-poster" class="grayscale">
+                    </div>
+                    <div class="modal-info">
+                        <h2 id="modal-title">Título</h2>
+                        <div class="modal-meta">
+                            <span id="modal-year"></span>
+                            <span id="modal-genre" class="genre-badge"></span>
+                        </div>
+                        <p id="modal-description"></p>
+
+                        <div class="rating-section" id="rating-section">
+                            <h3>Tu Valoración</h3>
+                            <div class="stars-input">
+                                <i class="fa-regular fa-star" data-value="1"></i>
+                                <i class="fa-regular fa-star" data-value="2"></i>
+                                <i class="fa-regular fa-star" data-value="3"></i>
+                                <i class="fa-regular fa-star" data-value="4"></i>
+                                <i class="fa-regular fa-star" data-value="5"></i>
+                                <i class="fa-regular fa-star" data-value="6"></i>
+                                <i class="fa-regular fa-star" data-value="7"></i>
+                                <i class="fa-regular fa-star" data-value="8"></i>
+                                <i class="fa-regular fa-star" data-value="9"></i>
+                                <i class="fa-regular fa-star" data-value="10"></i>
+                            </div>
+                            <textarea id="comment-input" placeholder="¿Qué te pareció?"></textarea>
+                            <button id="save-rating-btn" class="primary-btn">Guardar</button>
+                        </div>
+
+                        <div class="community-reviews hidden" id="community-reviews">
+                            <h3>Tus Notas</h3>
+                            <div class="user-review-display">
+                                <div class="review-score"><span id="display-score">0</span>/10</div>
+                                <p id="display-comment"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="profile-modal" class="modal hidden">
+            <div class="modal-content profile-content">
+                <span class="close-profile">&times;</span>
+                <h2>Editar Perfil</h2>
+                <div class="profile-form">
+                    <div class="form-group">
+                        <label>Nombre de Usuario</label>
+                        <input type="text" id="profile-username" placeholder="Tu nombre">
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha de Nacimiento</label>
+                        <input type="date" id="profile-dob">
+                    </div>
+                    <div class="form-group">
+                        <label>Generos Favoritos</label>
+                        <div class="genre-checkboxes">
+                            <label><input type="checkbox" value="action"> Acción</label>
+                            <label><input type="checkbox" value="drama"> Drama</label>
+                            <label><input type="checkbox" value="scifi"> Ci-Fi</label>
+                            <label><input type="checkbox" value="horror"> Terror</label>
+                            <label><input type="checkbox" value="comedy"> Comedia</label>
+                            <label><input type="checkbox" value="romance"> Romance</label>
+                        </div>
+                    </div>
+                    <button id="save-profile-btn" class="primary-btn">Guardar Cambios</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="public-profile-modal" class="modal hidden">
+        <div class="modal-content public-profile-content">
+            <span class="close-public-profile"
+                style="position: absolute; top: 20px; right: 25px; cursor: pointer; color: grey; font-size: 2rem;">&times;</span>
+            <img src="" class="public-profile-avatar" id="public-avatar">
+            <div class="public-profile-info">
+                <h2 class="public-profile-name" id="public-name"></h2>
+                <div class="public-profile-meta">
+                    <span id="public-age"></span>
+                </div>
+                <div class="public-genres" id="public-genres"></div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <script type="module">
+        import { auth, db } from './firebase-config.js';
+        import { onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, where, getDocs, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // Configuración API
+        const API_KEY = '5a3e009cc1dae908829259fca703917a';
+        const BASE_URL = 'https://api.themoviedb.org/3';
+        const IMAGE_URL = 'https://image.tmdb.org/t/p/w500';
+        const GENRE_MAP = { 'action': 28, 'drama': 18, 'scifi': 878, 'horror': 27, 'comedy': 35, 'romance': 10749, 'all': null };
+
+        // Estado
+        let appState = {
+            ratings: {}, // Structure: { movieId: [ { ...ratingData, firestoreId: '...' } ] }
+            filterType: 'movie',
+            filterGenre: 'all',
+            filterStatus: 'all',
+            searchQuery: '',
+            page: 1,
+            isLoading: false
+        };
+
+        // Elementos DOM
+        const grid = document.getElementById('content-grid');
+        const userLevelText = document.getElementById('user-level');
+        const userAvatar = document.querySelector('.avatar');
+
+        // --- 1. Autenticación y Carga Inicial ---
+        const isGuest = localStorage.getItem('omnilog_guest');
+
+        let currentUserId = null;
+        let currentUserName = "Invitado";
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUserId = user.uid;
+                currentUserName = user.displayName || user.email.split('@')[0];
+                setupUserUI(currentUserName, user.photoURL);
+            } else if (isGuest) {
+                currentUserId = 'guest';
+                currentUserName = "Invitado";
+                setupUserUI("Invitado", null);
+            } else {
+                window.location.href = 'logeo.html';
+            }
+            // Iniciar carga de datos una vez autenticado
+            subscribeToRatings();
+        });
+
+        // Suscripción a Firestore (Real-time)
+        function subscribeToRatings() {
+            const q = collection(db, "ratings");
+            onSnapshot(q, (snapshot) => {
+                const newRatings = {}; // Reset local Cache to rebuild from snapshot
+
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const ratingObj = { ...data, firestoreId: doc.id }; // Keep Firestore ID for deletion
+
+                    if (!newRatings[data.id]) {
+                        newRatings[data.id] = [];
+                    }
+                    newRatings[data.id].push(ratingObj);
+                });
+
+                appState.ratings = newRatings;
+                fetchAndRender(true); // Re-render when data changes
+            });
+        }
+
+        function setupUserUI(name, photo) {
+            userLevelText.textContent = name;
+            if (photo) {
+                userAvatar.style.background = `url('${photo}') center/cover`;
+            } else {
+                userAvatar.textContent = name.charAt(0).toUpperCase();
+                userAvatar.style.display = "flex";
+                userAvatar.style.alignItems = "center";
+                userAvatar.style.justifyContent = "center";
+                userAvatar.style.fontWeight = "bold";
+            }
+        }
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            localStorage.removeItem('omnilog_guest');
+            signOut(auth).then(() => window.location.href = 'logeo.html');
+        });
+
+        document.getElementById('change-platform-btn').addEventListener('click', () => {
+            window.location.href = 'plataformas.html';
+        });
+
+        // --- 2. Lógica de Navegación y Filtros ---
+        // Navbar (Movies/Series)
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                appState.filterType = btn.dataset.type === 'series' ? 'tv' : 'movie';
+                appState.page = 1;
+                fetchAndRender(true);
+            });
+        });
+
+        // Generos
+        document.getElementById('genre-select').addEventListener('change', (e) => {
+            appState.filterGenre = e.target.value;
+            appState.page = 1;
+            fetchAndRender(true);
+        });
+
+        // Status (Vistas/Por ver)
+        document.querySelectorAll('.status-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.status-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                appState.filterStatus = btn.dataset.status;
+                appState.page = 1;
+                fetchAndRender(true);
+            });
+        });
+
+        // Buscador
+        let debounceTimer;
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                appState.searchQuery = e.target.value.trim();
+                appState.page = 1;
+                fetchAndRender(true);
+            }, 500);
+        });
+
+        // Scroll Infinito
+        window.addEventListener('scroll', () => {
+            if (appState.filterStatus === 'watched') return;
+            const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+            if (scrollTop + clientHeight >= scrollHeight - 100 && !appState.isLoading) {
+                appState.page++;
+                fetchAndRender(false);
+            }
+        });
+
+        // --- 3. Lógica de Datos (API) ---
+        async function fetchAndRender(resetGrid = false) {
+            if (appState.isLoading) return;
+            appState.isLoading = true;
+
+            if (resetGrid) grid.innerHTML = '';
+
+            // Si el filtro es "Vistas" o "Mejores Valoradas", usamos localStorage/comunidad
+            if (appState.filterStatus === 'watched') {
+                renderLocalCollection();
+                appState.isLoading = false;
+                return;
+            } else if (appState.filterStatus === 'top_rated') {
+                renderCommunityTopRated();
+                appState.isLoading = false;
+                return;
+            }
+
+            // Construir URL
+            let url = '';
+            const genreId = GENRE_MAP[appState.filterGenre];
+
+            if (appState.searchQuery) {
+                url = `${BASE_URL}/search/${appState.filterType}?api_key=${API_KEY}&language=es-ES&query=${encodeURIComponent(appState.searchQuery)}&page=${appState.page}`;
+            } else if (appState.filterStatus === 'top_rated') {
+                // Ya manejado localmente, pero por seguridad si falla algo:
+                url = `${BASE_URL}/${appState.filterType}/top_rated?api_key=${API_KEY}&language=es-ES&page=${appState.page}`;
+            } else if (appState.filterGenre === 'all') {
+                url = `${BASE_URL}/${appState.filterType}/popular?api_key=${API_KEY}&language=es-ES&page=${appState.page}`;
+            } else {
+                url = `${BASE_URL}/discover/${appState.filterType}?api_key=${API_KEY}&language=es-ES&with_genres=${genreId}&sort_by=popularity.desc&page=${appState.page}`;
+            }
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+
+                data.results.forEach(item => {
+                    // Check if *THIS* user has rated it
+                    const movieRatings = appState.ratings[item.id] || [];
+                    const userRating = movieRatings.find(r => r.userId === currentUserId);
+                    const isRated = !!userRating;
+
+                    // Si filtramos por "Por ver" y ya está vista, saltar
+                    if (appState.filterStatus === 'unwatched' && isRated) return;
+                    createCard(item, userRating); // Pass userRating explicitly
+                });
+            } catch (error) {
+                console.error("Error API:", error);
+            } finally {
+                appState.isLoading = false;
+            }
+        }
+
+        function renderLocalCollection() {
+            // Flatten all ratings from all movies, but only for current user
+            const allRatings = [];
+            Object.values(appState.ratings).forEach(movieRatings => {
+                if (Array.isArray(movieRatings)) {
+                    const myRating = movieRatings.find(r => r.userId === currentUserId);
+                    if (myRating) allRatings.push(myRating);
+                }
+            });
+
+            const filtered = allRatings.filter(item => {
+                if (item.type !== appState.filterType) return false;
+                if (appState.filterGenre !== 'all') {
+                    const targetId = GENRE_MAP[appState.filterGenre];
+                    if (!item.genre_ids || !item.genre_ids.includes(targetId)) return false;
+                }
+                return true;
+            });
+
+            // Ordenar según filtro
+            if (appState.filterStatus === 'top_rated') {
+                filtered.sort((a, b) => b.score - a.score);
+            } else {
+                // Por defecto (Vistas): fecha reciente
+                filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+            }
+            filtered.forEach(createCardFromLocal);
+        }
+
+        function renderCommunityTopRated() {
+            const communityItems = [];
+
+            // Iterate over all movies with ratings
+            Object.values(appState.ratings).forEach(ratingsArray => {
+                if (!Array.isArray(ratingsArray) || ratingsArray.length === 0) return;
+
+                // Get metadata from the first rating entry
+                const first = ratingsArray[0];
+
+                // Check Filter Type
+                if (first.type !== appState.filterType) return;
+                // Check Filter Genre
+                if (appState.filterGenre !== 'all') {
+                    const targetId = GENRE_MAP[appState.filterGenre];
+                    if (!first.genre_ids || !first.genre_ids.includes(targetId)) return;
+                }
+
+                // Calculate Community Average
+                const sum = ratingsArray.reduce((acc, r) => acc + r.score, 0);
+                const avg = sum / ratingsArray.length;
+
+                // Create Display Item
+                const item = {
+                    ...first,
+                    vote_average: avg
+                };
+                communityItems.push(item);
+            });
+
+            // Sort by Community Average
+            communityItems.sort((a, b) => b.vote_average - a.vote_average);
+
+            communityItems.forEach(createCardFromLocal);
+        }
+
+        function createCard(item, existingRating = null) {
+            let isRated = false;
+            let score = 0;
+            let displayScore = "0";
+
+            // 1. Check Personal Rating
+            if (existingRating) {
+                isRated = true;
+                score = existingRating.score;
+                displayScore = score;
+            } else {
+                const movieRatings = appState.ratings[item.id] || [];
+                const myRating = movieRatings.find(u => u.userId === currentUserId);
+
+                if (myRating) {
+                    isRated = true;
+                    score = myRating.score;
+                    displayScore = score;
+                } else if (movieRatings.length > 0) {
+                    // 2. Check Community Rating
+                    const sum = movieRatings.reduce((acc, r) => acc + r.score, 0);
+                    displayScore = (sum / movieRatings.length).toFixed(1);
+                    // Remove .0 if integer
+                    if (displayScore.endsWith('.0')) displayScore = displayScore.slice(0, -2);
+                }
+            }
+
+            const title = item.title || item.name;
+            const posterPath = item.poster_path ? IMAGE_URL + item.poster_path : null;
+            if (!posterPath) return;
+
+            const card = document.createElement('div');
+            card.className = 'content-item';
+            card.innerHTML = `
+                <img src="${posterPath}" class="${isRated ? '' : 'grayscale'}" alt="${title}">
+                <div class="item-status">
+                    <h4>${title}</h4>
+                    <small>${(isRated || displayScore > 0) ? '⭐ ' + displayScore + '/10' : 'Sin valorar'}</small>
+                </div>
+            `;
+            card.addEventListener('click', () => openModal(item));
+            grid.appendChild(card);
+        }
+
+        function createCardFromLocal(localItem) {
+            // Reconstruimos el objeto item para que el modal funcione igual
+            const item = {
+                id: localItem.id,
+                title: localItem.title,
+                name: localItem.title,
+                poster_path: localItem.poster_path,
+                genre_ids: localItem.genre_ids,
+                overview: localItem.overview,
+                release_date: localItem.year + '-01-01' // Aproximación
+            };
+            createCard(item);
+        }
+
+        // --- 4. Modal y Valoraciones ---
+        const modal = document.getElementById('detail-modal');
+        let currentItem = null;
+        let currentRating = 0;
+        let editingReviewId = null; // Track if we are editing
+
+        // Cerrar modal
+        document.querySelector('.close-modal').onclick = () => modal.classList.add('hidden');
+        window.onclick = (e) => { if (e.target == modal) modal.classList.add('hidden'); };
+
+        function openModal(item) {
+            currentItem = item;
+
+            const movieRatings = appState.ratings[item.id] || [];
+            const myRating = movieRatings.find(r => r.userId === currentUserId);
+
+            document.getElementById('modal-poster').src = item.poster_path ? IMAGE_URL + item.poster_path : '';
+            document.getElementById('modal-poster').className = myRating ? '' : 'grayscale';
+            document.getElementById('modal-title').textContent = item.title || item.name;
+            document.getElementById('modal-description').textContent = item.overview || "Sin descripción.";
+
+            const date = item.release_date || item.first_air_date || '????';
+            document.getElementById('modal-year').textContent = date.split('-')[0];
+
+            const ratingSection = document.getElementById('rating-section');
+            const communitySection = document.getElementById('community-reviews');
+
+            // Render Review List
+            communitySection.innerHTML = '<h3>Valoraciones de la Comunidad</h3><div class="reviews-container"></div>';
+            const container = communitySection.querySelector('.reviews-container');
+
+            if (movieRatings.length > 0) {
+                communitySection.classList.remove('hidden');
+                movieRatings.forEach(r => {
+                    const div = document.createElement('div');
+                    div.className = 'review-item';
+                    // Highlight my own review
+                    if (r.userId === currentUserId) div.classList.add('my-review');
+
+                    let deleteHtml = '';
+                    if (r.userId === currentUserId && !isGuest) {
+                        deleteHtml = `
+                            <div style="display:flex; gap:5px;">
+                                <button class="delete-icon-btn" style="color: #6366f1;" onclick="editReview('${item.id}')"><i class="fa-solid fa-pen"></i></button>
+                                <button class="delete-icon-btn" onclick="deleteReview('${item.id}', '${r.userId}')"><i class="fa-solid fa-trash"></i></button>
+                            </div>`;
+                    }
+
+                    div.innerHTML = `
+                        <div class="review-header">
+                            <div class="review-avatar-container">
+                                <img src="${r.userPhoto || ''}" class="review-avatar" 
+                                     data-name="${r.userName || 'Anónimo'}" 
+                                     data-photo="${r.userPhoto || ''}"
+                                     onclick="viewPublicProfile('${r.userId}', this.dataset.name, this.dataset.photo)" 
+                                     onerror="this.src='https://ui-avatars.com/api/?name=${r.userName}&background=random'">
+                                <span class="reviewer-name">${r.userName || 'Anónimo'}</span>
+                            </div>
+                            <span class="review-stars">⭐ ${r.score}/10</span>
+                            ${deleteHtml}
+                        </div>
+                        <p class="review-comment">${r.comment || ''}</p>
+                        <small class="review-date">${new Date(r.date).toLocaleDateString()}</small>
+                     `;
+                    container.appendChild(div);
+                });
+            } else {
+                communitySection.classList.add('hidden');
+            }
+
+            // Show/Hide Input Form based on if I have rated it
+            if (myRating) {
+                ratingSection.classList.add('hidden');
+            } else {
+                ratingSection.classList.remove('hidden');
+                document.getElementById('comment-input').value = '';
+                currentRating = 0;
+                editingReviewId = null; // Reset edit state
+                document.getElementById('save-rating-btn').textContent = "Guardar";
+                updateStarsUI(0);
+            }
+
+            // Evento para guardar con Enter en el input de comentario
+            document.getElementById('comment-input').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    document.getElementById('save-rating-btn').click();
+                }
+            });
+
+            modal.classList.remove('hidden');
+        }
+
+        // Estrellas
+        const stars = document.querySelectorAll('.stars-input i');
+        stars.forEach(star => {
+            star.addEventListener('click', () => {
+                currentRating = parseInt(star.dataset.value);
+                updateStarsUI(currentRating);
+            });
+        });
+
+        function updateStarsUI(rating) {
+            stars.forEach(s => {
+                const val = parseInt(s.dataset.value);
+                if (val <= rating) { s.classList.remove('fa-regular'); s.classList.add('fa-solid', 'active'); }
+                else { s.classList.remove('fa-solid', 'active'); s.classList.add('fa-regular'); }
+            });
+        }
+
+        // Guardar
+        document.getElementById('save-rating-btn').addEventListener('click', async () => {
+            if (isGuest) {
+                alert("Las funciones de guardado no están disponibles para invitados. Por favor, inicia sesión.");
+                return;
+            }
+            if (currentRating === 0) return alert("¡Puntúa primero!");
+
+            const title = currentItem.title || currentItem.name;
+            const date = currentItem.release_date || currentItem.first_air_date || '????';
+
+            // Common Data
+            const ratingData = {
+                score: currentRating,
+                comment: document.getElementById('comment-input').value,
+                date: new Date().toISOString(),
+                userName: currentUserName,
+                userPhoto: auth.currentUser.photoURL
+            };
+
+            const saveBtn = document.getElementById('save-rating-btn');
+            saveBtn.disabled = true;
+
+            try {
+                if (editingReviewId) {
+                    // UPDATE existing
+                    await updateDoc(doc(db, "ratings", editingReviewId), ratingData);
+                    console.log("Valoración actualizada");
+                } else {
+                    // CREATE new
+                    const newRating = {
+                        ...ratingData,
+                        id: currentItem.id,
+                        title: title,
+                        poster_path: currentItem.poster_path,
+                        genre_ids: currentItem.genre_ids,
+                        overview: currentItem.overview,
+                        type: appState.filterType,
+                        year: date.split('-')[0],
+                        userId: currentUserId,
+                    };
+                    await addDoc(collection(db, "ratings"), newRating);
+                    console.log("Valoración creada");
+                }
+
+                modal.classList.add('hidden');
+            } catch (e) {
+                console.error("Error al guardar/actualizar: ", e);
+                alert("Hubo un error al guardar.");
+            } finally {
+                saveBtn.disabled = false;
+            }
+        });
+
+        // Edit Function
+        window.editReview = function (movieId) {
+            const list = appState.ratings[movieId];
+            const myRating = list.find(r => r.userId === currentUserId);
+            if (!myRating) return;
+
+            // Populate Form
+            currentRating = myRating.score;
+            updateStarsUI(currentRating);
+            document.getElementById('comment-input').value = myRating.comment || '';
+            editingReviewId = myRating.firestoreId;
+
+            // Adjust UI
+            document.getElementById('save-rating-btn').textContent = "Actualizar";
+            document.getElementById('rating-section').classList.remove('hidden');
+            document.getElementById('community-reviews').classList.add('hidden'); // Hide reviews to focus on edit
+        };
+
+        function handleDeleteRating(movieId) {
+            if (isGuest) return alert("Los invitados no pueden gestionar reseñas.");
+
+            const list = appState.ratings[movieId];
+            if (!list) return;
+
+            // Encontrar la reseña del usuario actual
+            const ratingToDelete = list.find(r => r.userId === currentUserId);
+
+            if (!ratingToDelete) return alert("No encontré tu reseña.");
+
+            // Confirmación
+            if (!confirm("¿Estás seguro de que quieres eliminar tu reseña?")) return;
+
+            // Borrar de Firestore usando el ID del documento
+            if (ratingToDelete.firestoreId) {
+                deleteDoc(doc(db, "ratings", ratingToDelete.firestoreId))
+                    .then(() => {
+                        // UI update handled by onSnapshot
+                        // Close/Reset Modal UI manually to be snappy or wait for re-render
+                        const ratingSection = document.getElementById('rating-section');
+                        const communitySection = document.getElementById('community-reviews');
+                        ratingSection.classList.remove('hidden');
+                        communitySection.classList.add('hidden');
+                        document.getElementById('comment-input').value = '';
+                        currentRating = 0;
+                        updateStarsUI(0);
+
+                        const existingBtn = document.getElementById('delete-rating-btn');
+                        if (existingBtn) existingBtn.remove();
+                    })
+                    .catch(e => alert("Error al borrar: " + e.message));
+            }
+        }
+
+        // Global for window access
+        window.deleteReview = function (movieId, userId) {
+            handleDeleteRating(movieId); // Re-use same logic since we know currentUserId internally
+        };
+
+        // --- 5. Lógica de Perfil ---
+        const profileModal = document.getElementById('profile-modal');
+        const profileBtn = document.getElementById('profile-btn');
+        const closeProfile = document.querySelector('.close-profile');
+        const saveProfileBtn = document.getElementById('save-profile-btn');
+
+        // Open Profile
+        profileBtn.addEventListener('click', async () => {
+            if (isGuest) return alert("Debes iniciar sesión para editar tu perfil.");
+
+            // Pre-fill Name from Auth
+            document.getElementById('profile-username').value = currentUserName;
+
+            // Fetch Extra Data from Firestore
+            try {
+                const docRef = doc(db, "users", currentUserId);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    document.getElementById('profile-dob').value = data.birthdate || '';
+
+                    // Reset checkboxes
+                    document.querySelectorAll('.genre-checkboxes input').forEach(cb => cb.checked = false);
+
+                    if (data.genres) {
+                        data.genres.forEach(g => {
+                            const cb = document.querySelector(`.genre-checkboxes input[value="${g}"]`);
+                            if (cb) cb.checked = true;
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching profile:", error);
+            }
+
+            profileModal.classList.remove('hidden');
+        });
+
+        // Close Profile
+        closeProfile.onclick = () => profileModal.classList.add('hidden');
+        window.onclick = (e) => {
+            if (e.target == profileModal) profileModal.classList.add('hidden');
+            if (e.target == modal) modal.classList.add('hidden'); // Existing modal close
+        };
+
+        // Save Profile
+        saveProfileBtn.addEventListener('click', async () => {
+            const newName = document.getElementById('profile-username').value.trim();
+            const newDob = document.getElementById('profile-dob').value;
+            const selectedGenres = Array.from(document.querySelectorAll('.genre-checkboxes input:checked')).map(cb => cb.value);
+
+            if (!newName) return alert("El nombre no puede estar vacío.");
+
+            saveProfileBtn.textContent = "Guardando...";
+            saveProfileBtn.disabled = true;
+
+            try {
+                // 1. Update Auth Profile (Display Name)
+                if (newName !== currentUserName) {
+                    await updateProfile(auth.currentUser, { displayName: newName });
+                    currentUserName = newName;
+                    setupUserUI(currentUserName, auth.currentUser.photoURL);
+                }
+
+                // 2. Update Firestore (Extended Data)
+                await setDoc(doc(db, "users", currentUserId), {
+                    username: newName, // redundancy for easier querying if needed
+                    birthdate: newDob,
+                    genres: selectedGenres,
+                    updatedAt: new Date().toISOString()
+                }, { merge: true });
+
+                alert("Perfil actualizado correctamente.");
+                profileModal.classList.add('hidden');
+
+            } catch (error) {
+                console.error("Error saving profile:", error);
+                alert("Error al guardar perfil: " + error.message);
+            } finally {
+                saveProfileBtn.textContent = "Guardar Cambios";
+                saveProfileBtn.disabled = false;
+            }
+        });
+
+
+        // --- 6. Perfil Público (Solo Lectura) ---
+        const publicModal = document.getElementById('public-profile-modal');
+        const closePublic = document.querySelector('.close-public-profile');
+
+        closePublic.onclick = () => publicModal.classList.add('hidden');
+        window.onclick = (e) => {
+            if (e.target == publicModal) publicModal.classList.add('hidden');
+            if (e.target == profileModal) profileModal.classList.add('hidden');
+            if (e.target == modal) modal.classList.add('hidden');
+        };
+
+        window.viewPublicProfile = async function (targetUserId) {
+            try {
+                const docRef = doc(db, "users", targetUserId);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    const name = data.username || "Usuario";
+                    const photo = data.photoURL || `https://ui-avatars.com/api/?name=${name}&background=random`; // Fallback implicit if not saved in user doc but usually we use auth photo in reviews.
+
+                    // Note: We might want to save photoURL in users collection too on profile update to be sure.
+                    // For now, let's use what we have or a placeholder. 
+                    // Actually, the review has a photo, but to get LATEST profile data (genres), we read 'users' doc.
+                    // 'users' doc might not have photo if we didn't save it there. Let's fix saveProfile to save photo too or just use UI Avatar if missing.
+
+                    document.getElementById('public-name').textContent = name;
+
+                    // Calc Age
+                    if (data.birthdate) {
+                        const birth = new Date(data.birthdate);
+                        const ageDifMs = Date.now() - birth.getTime();
+                        const ageDate = new Date(ageDifMs);
+                        const age = Math.abs(ageDate.getUTCFullYear() - 1970);
+                        document.getElementById('public-age').textContent = `${age} años`;
+                    } else {
+                        document.getElementById('public-age').textContent = "";
+                    }
+
+                    // Genres
+                    const genresDiv = document.getElementById('public-genres');
+                    genresDiv.innerHTML = '';
+                    if (data.genres && data.genres.length > 0) {
+                        data.genres.forEach(g => {
+                            const span = document.createElement('span');
+                            span.className = 'public-genre-tag';
+                            span.textContent = g.toUpperCase();
+                            genresDiv.appendChild(span);
+                        })
+                    } else {
+                        genresDiv.innerHTML = '<span style="color:grey; font-size:0.8rem">Sin preferencias registradas</span>';
+                    }
+
+                    // Avatar (We try to get it from the click event source or just placeholder if not in DB)
+                    // Since we don't pass the photo URL to this function, let's use a generic generic one or try to update User doc to have it.
+                    // BETTER: Update the 'users' doc when saving profile to ALSO include photoURL from Auth.
+
+                    // For now, let's just use the UI Avatar with their name
+                    document.getElementById('public-avatar').src = `https://ui-avatars.com/api/?name=${name}&background=random&size=128`;
+
+                    publicModal.classList.remove('hidden');
+                } else {
+                    alert("Este usuario no ha configurado su perfil público aún.");
+                }
+            } catch (error) {
+                console.error("Error viewing public profile:", error);
+            }
+        };
+    </script>
+</body>
+
+</html>
