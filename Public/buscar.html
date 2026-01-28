@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ParkWay - Buscar Aparcamiento</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+</head>
+
+<body>
+    <section class="view">
+        <header class="app-header"
+            style="margin-bottom: 0; padding: 1rem 2rem; border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.2);">
+            <div class="header-left">
+                <h2 class="mini-logo">ParkWay</h2>
+            </div>
+            <div class="header-right">
+                <a href="plataformas.html" class="icon-btn" title="Volver"><i class="fa-solid fa-arrow-left"></i></a>
+            </div>
+        </header>
+
+        <div class="map-layout">
+            <!-- Panel Lateral -->
+            <div class="map-panel">
+                <h2>🚗 Buscar Plaza</h2>
+                <div class="map-input-group">
+                    <input id="searchInput" class="search-input-alt" placeholder="¿Dónde quieres ir?" />
+                    <button onclick="iniciarNavegacion()" class="primary-btn" style="width: 100%; padding: 10px;">
+                        <i class="fa-solid fa-location-arrow"></i> Navegar
+                    </button>
+                </div>
+
+                <div id="routeInstructions">
+                    <p style="text-align: center; opacity: 0.6;">Las indicaciones aparecerán aquí.</p>
+                </div>
+            </div>
+
+            <!-- Mapa -->
+            <div class="map-container">
+                <div id="map"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Leaflet Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
+
+    <!-- Map Logic -->
+    <script>
+        const map = L.map('map').setView([40.4168, -3.7038], 15);
+
+        // CartoDB Dark Matter for Dark Theme compatibility
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 20
+        }).addTo(map);
+
+        let routingControl = null;
+        let watchId = null;
+        let destinoLatLng = null;
+        let carMarker = null;
+
+        // Custom Car Icon
+        const carIcon = L.divIcon({
+            className: 'custom-car-icon',
+            html: `
+            <svg width="40" height="40" viewBox="0 0 512 512" style="filter: drop-shadow(0 0 10px #7c3aed);">
+                <path fill="#7c3aed" d="M437 166L382 56H130L75 166c-28 6-49 31-49 61v155c0 18 14 32 32 32h21c6 0 11-4 13-9l15-45h298l15 45c2 5 7 9 13 9h21c18 0 32-14 32-32V227c0-30-21-55-49-61zM152 96h208l33 64H119l33-64zm-32 208c-18 0-32-14-32-32s14-32 32-32 32 14 32 32-14 32-32 32zm272 0c-18 0-32-14-32-32s14-32 32-32 32 14 32 32-14 32-32 32z"/>
+            </svg>`,
+            iconSize: [40, 40],
+            iconAnchor: [20, 20]
+        });
+
+        // Parking Spot Icon
+        const parkingIcon = L.divIcon({
+            className: 'parking-icon',
+            html: `
+            <div style="background: #10b981; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);">
+                <i class="fa-solid fa-square-parking" style="color: white; font-size: 16px;"></i>
+            </div>`,
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+        });
+
+        // Generate Random Spots
+        function addRandomParkingSpots(center) {
+            // Remove existing random markers if we wanted to refresh, but for now let's just add them once or nearby
+            for (let i = 0; i < 8; i++) {
+                // Random offset roughly within 1-2km
+                const latOffset = (Math.random() - 0.5) * 0.01;
+                const lngOffset = (Math.random() - 0.5) * 0.01;
+
+                L.marker([center.lat + latOffset, center.lng + lngOffset], { icon: parkingIcon })
+                    .addTo(map)
+                    .bindPopup(`<b>🅿️ Plaza Libre</b><br>Libre hace ${Math.floor(Math.random() * 10) + 1} min`);
+            }
+        }
+
+        // Init spots in Madrid default - REMOVED
+        // addRandomParkingSpots({ lat: 40.4168, lng: -3.7038 });
+
+        // 1. Iniciar Navegación
+        async function iniciarNavegacion() {
+            const destino = document.getElementById('searchInput').value;
+            if (!destino) return alert('Escribe un destino');
+
+            const btn = document.querySelector('button[onclick="iniciarNavegacion()"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Buscando...';
+
+            try {
+                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(destino)}`;
+                const res = await fetch(url);
+                const data = await res.json();
+
+                if (!data.length) {
+                    alert('Destino no encontrado');
+                    btn.innerHTML = originalText;
+                    return;
+                }
+
+                destinoLatLng = L.latLng(data[0].lat, data[0].lon);
+
+                if (watchId) navigator.geolocation.clearWatch(watchId);
+
+                watchId = navigator.geolocation.watchPosition(actualizarPosicion,
+                    err => {
+                        alert('Error GPS: ' + err.message);
+                        btn.innerHTML = originalText;
+                    },
+                    { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+                );
+            } catch (e) {
+                console.error(e);
+                alert("Error al conectar con el servicio de mapas.");
+                btn.innerHTML = originalText;
+            }
+        }
+
+        // 2. Actualizar Posición
+        function actualizarPosicion(pos) {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            const actual = L.latLng(lat, lng);
+
+            if (!carMarker) {
+                carMarker = L.marker(actual, { icon: carIcon }).addTo(map);
+
+                // First time locating user: Clear defaults and add spots near USER
+                if (!hasAddedOriginSpots) {
+                    addRandomParkingSpots(actual, true);
+                    hasAddedOriginSpots = true;
+                }
+            } else {
+                carMarker.setLatLng(actual);
+            }
+
+            // Zoom más suave
+            map.setView(actual, 18, { animate: true });
+
+            if (routingControl) map.removeControl(routingControl);
+
+            routingControl = L.Routing.control({
+                waypoints: [actual, destinoLatLng],
+                show: false, // Ocultar panel por defecto de leaflet
+                routeWhileDragging: false,
+                lineOptions: {
+                    styles: [{ color: '#7c3aed', weight: 6, opacity: 0.9, shadowBlur: 10, shadowColor: '#7c3aed' }]
+                },
+                createMarker: function () { return null; } // Evitar marcadores extra
+            }).addTo(map);
+
+            routingControl.on('routesfound', e => mostrarIndicaciones(e));
+        }
+
+        // 3. Mostrar Indicaciones
+        function mostrarIndicaciones(e) {
+            const div = document.getElementById('routeInstructions');
+            div.innerHTML = '';
+
+            const r = e.routes[0];
+            div.innerHTML += `<div style="margin-bottom: 10px; padding: 10px; background: rgba(124, 58, 237, 0.1); border-radius: 8px;">
+                                <div style="font-size: 1.2rem; color: #fff;">${(r.summary.totalTime / 60).toFixed(0)} min</div>
+                                <div style="color: #ccc;">${(r.summary.totalDistance / 1000).toFixed(1)} km</div>
+                              </div>`;
+
+            r.instructions.forEach(i => {
+                let icon = '➡️';
+                if (i.type === 'TurnLeft') icon = '⬅️';
+                if (i.type === 'TurnRight') icon = '➡️';
+                if (i.type === 'Roundabout') icon = '🔄';
+
+                div.innerHTML += `<div style="display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                    <span>${icon}</span>
+                                    <span>${i.text}</span>
+                                  </div>`;
+            });
+
+            // Restore btn
+            const btn = document.querySelector('button[onclick="iniciarNavegacion()"]');
+            btn.innerHTML = '<i class="fa-solid fa-location-arrow"></i> Actualizando...';
+        }
+    </script>
+    <style>
+        /* Local Override */
+        .search-input-alt {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+            color: white;
+            width: 100%;
+            outline: none;
+        }
+
+        .search-input-alt:focus {
+            border-color: var(--accent-main);
+        }
+
+        /* Hide Leaflet Default Control Container if needed or style it */
+        .leaflet-control-container .leaflet-routing-container-hide {
+            display: none;
+        }
+    </style>
+</body>
+
+
+</html>

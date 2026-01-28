@@ -105,9 +105,20 @@
             } catch (error) {
                 console.error(error);
                 let msg = "Error de autenticación";
+
+                // Errores comunes
                 if (error.code === 'auth/weak-password') msg = "La contraseña debe tener al menos 6 caracteres.";
                 if (error.code === 'auth/email-already-in-use') msg = "Este correo ya está registrado.";
                 if (error.code === 'auth/invalid-credential') msg = "Correo o contraseña incorrectos.";
+
+                // Error de dominio no autorizado (El problema actual)
+                if (error.code === 'auth/unauthorized-domain') {
+                    msg = "⚠️ Dominio no autorizado.\n\n" +
+                        "1. Si estás usando un archivo local (file://), usa un SERVIDOR LOCAL.\n" +
+                        "2. Ve a Firebase Console > Authentication > Settings > Authorized Domains.\n" +
+                        "3. Añade 'localhost' y '127.0.0.1'.";
+                }
+
                 alert(msg);
             }
         });
