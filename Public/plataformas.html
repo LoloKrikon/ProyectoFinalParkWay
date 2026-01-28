@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OmniLog - Elige Plataformas</title>
+    <title>ParkWay - Elige la opción</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -43,7 +43,7 @@
         import { auth } from './js/firebase-config.js';
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-        // Verificar sesión
+        // Verificación de seguridad (solo usuarios autenticados)
         const isGuest = localStorage.getItem('omnilog_guest');
 
         onAuthStateChanged(auth, (user) => {
@@ -52,7 +52,7 @@
             }
         });
 
-        // Logout Logic
+        // Lógica de cierre de sesión
         const logoutBtn = document.getElementById('logout-btn');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', async () => {
@@ -67,9 +67,7 @@
             });
         }
 
-        // Login check is enough. Navigation is handled by <a href> tags directly.
-        // Clearing potentially old local storage to avoid confusion, though not strictly necessary.
-        localStorage.removeItem('omnilog_platforms');
+        // Limpieza preventiva de datos antiguos
     </script>
 </body>
 

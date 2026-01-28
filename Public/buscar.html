@@ -29,7 +29,7 @@
         <div class="map-layout">
             <!-- Panel Lateral -->
             <div class="map-panel">
-                <h2>🚗 Buscar Plaza</h2>
+                <h2>Buscar Plaza</h2>
                 <div class="map-input-group">
                     <input id="searchInput" class="search-input-alt" placeholder="¿Dónde quieres ir?" />
                     <button onclick="iniciarNavegacion()" class="primary-btn" style="width: 100%; padding: 10px;">
@@ -53,7 +53,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
 
-    <!-- Map Logic -->
+    <!-- Lógica del Mapa -->
     <script>
         const map = L.map('map').setView([40.4168, -3.7038], 15);
 
@@ -68,6 +68,7 @@
         let watchId = null;
         let destinoLatLng = null;
         let carMarker = null;
+        let hasAddedOriginSpots = false;
 
         // Custom Car Icon
         const carIcon = L.divIcon({
@@ -91,7 +92,7 @@
             iconAnchor: [15, 15]
         });
 
-        // Generate Random Spots
+        // Generación de plazas libres simuladas (Demo)
         function addRandomParkingSpots(center) {
             // Remove existing random markers if we wanted to refresh, but for now let's just add them once or nearby
             for (let i = 0; i < 8; i++) {
@@ -108,7 +109,27 @@
         // Init spots in Madrid default - REMOVED
         // addRandomParkingSpots({ lat: 40.4168, lng: -3.7038 });
 
-        // 1. Iniciar Navegación
+        // Geolocalización inicial automática
+        map.locate({ setView: true, maxZoom: 16 });
+
+        map.on('locationfound', (e) => {
+            const actual = e.latlng;
+            if (!carMarker) {
+                carMarker = L.marker(actual, { icon: carIcon }).addTo(map)
+                    .bindPopup("Estás aquí").openPopup();
+
+                if (!hasAddedOriginSpots) {
+                    addRandomParkingSpots(actual);
+                    hasAddedOriginSpots = true;
+                }
+            }
+        });
+
+        map.on('locationerror', (e) => {
+            console.log("No se pudo localizar automáticamente:", e.message);
+        });
+
+        // Función principal de búsqueda y navegación
         async function iniciarNavegacion() {
             const destino = document.getElementById('searchInput').value;
             if (!destino) return alert('Escribe un destino');
@@ -146,7 +167,7 @@
             }
         }
 
-        // 2. Actualizar Posición
+        // Seguimiento GPS continuo
         function actualizarPosicion(pos) {
             const lat = pos.coords.latitude;
             const lng = pos.coords.longitude;
@@ -167,22 +188,26 @@
             // Zoom más suave
             map.setView(actual, 18, { animate: true });
 
-            if (routingControl) map.removeControl(routingControl);
+            // Routing only if destination is set
+            if (destinoLatLng) {
+                if (routingControl) map.removeControl(routingControl);
 
-            routingControl = L.Routing.control({
-                waypoints: [actual, destinoLatLng],
-                show: false, // Ocultar panel por defecto de leaflet
-                routeWhileDragging: false,
-                lineOptions: {
-                    styles: [{ color: '#7c3aed', weight: 6, opacity: 0.9, shadowBlur: 10, shadowColor: '#7c3aed' }]
-                },
-                createMarker: function () { return null; } // Evitar marcadores extra
-            }).addTo(map);
+                routingControl = L.Routing.control({
+                    waypoints: [actual, destinoLatLng],
+                    show: false, // Ocultar panel por defecto de leaflet
+                    routeWhileDragging: false,
+                    language: 'es',
+                    lineOptions: {
+                        styles: [{ color: '#7c3aed', weight: 6, opacity: 0.9, shadowBlur: 10, shadowColor: '#7c3aed' }]
+                    },
+                    createMarker: function () { return null; } // Evitar marcadores extra
+                }).addTo(map);
 
-            routingControl.on('routesfound', e => mostrarIndicaciones(e));
+                routingControl.on('routesfound', e => mostrarIndicaciones(e));
+            }
         }
 
-        // 3. Mostrar Indicaciones
+        // Renderizado de instrucciones de ruta
         function mostrarIndicaciones(e) {
             const div = document.getElementById('routeInstructions');
             div.innerHTML = '';
