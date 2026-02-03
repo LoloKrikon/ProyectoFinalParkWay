@@ -6,73 +6,40 @@
     <?php 
         $pageTitle = 'ParkWay - Buscar Aparcamiento';
         
-        // CSS extra para Leaflet (Mapas) y Routing Machine
-        // Importante: Estos se cargan dinámicamente en el header común
+        // CSS extra para Leaflet y estilos específicos del nuevo diseño
         $extraCss = '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-                     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />';
+                     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+                     <style>
+                        /* Local Override */
+                        .search-input-alt {
+                            background: rgba(0, 0, 0, 0.3);
+                            border: 1px solid rgba(255, 255, 255, 0.1);
+                            padding: 12px;
+                            border-radius: 8px;
+                            color: white;
+                            width: 100%;
+                            outline: none;
+                        }
+
+                        .search-input-alt:focus {
+                            border-color: var(--accent-main);
+                        }
+
+                        /* Hide Leaflet Default Control Container if needed or style it */
+                        .leaflet-control-container .leaflet-routing-container-hide {
+                            display: none;
+                        }
+                     </style>';
     ?>
     <!-- Inclusión del head común -->
     <?php include 'includes/head.php'; ?>
-    
-    <style>
-        /*
-           ESTILOS ESPECÍFICOS DEL MAPA
-           ========================================= */
-
-        /* Input de búsqueda flotante mejorado */
-        .search-input-alt {
-            background: rgba(0, 0, 0, 0.4); /* Fondo más oscuro para legibilidad */
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 14px;
-            border-radius: 12px;
-            color: white;
-            width: 100%;
-            outline: none;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(5px); /* Efecto vidrio */
-            font-size: 1rem;
-        }
-
-        .search-input-alt:focus {
-            border-color: var(--accent-main);
-            background: rgba(0, 0, 0, 0.6);
-            box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.2);
-        }
-
-        /* Ocultar el contenedor de rutas por defecto de Leaflet para personalizar la UI nosotros mismos */
-        .leaflet-control-container .leaflet-routing-container-hide {
-            display: none;
-        }
-
-        /* Panel de instrucciones personalizado */
-        .instructions-panel {
-            margin-top: 20px;
-            max-height: 400px;
-            overflow-y: auto;
-            border-top: 1px solid rgba(255,255,255,0.05);
-            padding-top: 10px;
-        }
-
-        /* Scrollbar personalizado para las instrucciones */
-        .instructions-panel::-webkit-scrollbar {
-            width: 6px;
-        }
-        .instructions-panel::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.02);
-        }
-        .instructions-panel::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 3px;
-        }
-    </style>
 </head>
 
 <body>
     <section class="view">
         <!-- 
-            Barra de navegación.
-            'showProfile' habilita el avatar del usuario.
-            'backLink' define a dónde regresa la flecha de "volver".
+            Barra de navegación común.
+            Se adapta el header del nuevo diseño usando el componente navbar.php.
         -->
         <?php 
             $showProfile = true; 
@@ -81,65 +48,120 @@
         ?>
 
         <div class="map-layout">
-            <!-- PANEL LATERAL: Entrada de búsqueda e instrucciones -->
+            <!-- Panel Lateral -->
             <div class="map-panel">
-                <h2 style="display: flex; align-items: center; gap: 10px;">
-                    <i class="fa-solid fa-map-location-dot" style="color: var(--accent-main);"></i> 
-                    Buscar Plaza
-                </h2>
-                
-                <!-- Input de búsqueda -->
+                <h2>Buscar Plaza</h2>
                 <div class="map-input-group">
-                    <input id="searchInput" class="search-input-alt" placeholder="¿A dónde quieres ir hoy?" />
-                    
-                    <button onclick="iniciarNavegacion()" class="primary-btn" style="width: 100%; margin-top: 15px;">
+                    <input id="searchInput" class="search-input-alt" placeholder="¿Dónde quieres ir?" />
+                    <button onclick="iniciarNavegacion()" class="primary-btn" style="width: 100%; padding: 10px;">
                         <i class="fa-solid fa-location-arrow"></i> Navegar
                     </button>
                 </div>
 
-                <!-- Contenedor de instrucciones de ruta (Se llena dinámicamente con JS) -->
-                <div id="routeInstructions" class="instructions-panel">
-                    <div style="text-align: center; padding: 40px 20px; opacity: 0.6; display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                        <i class="fa-solid fa-route" style="font-size: 2rem;"></i>
-                        <p>Ingresa un destino para ver la ruta y plazas disponibles.</p>
-                    </div>
+                <!-- Historial de búsquedas recientes -->
+                <div id="searchHistory" style="margin-top: 20px;">
+                    <h3 style="font-size: 0.9rem; opacity: 0.6; margin-bottom: 10px;">Búsquedas recientes</h3>
+                    <div id="historyList"></div>
+                </div>
+
+                <!-- Indicaciones de ruta (oculto por defecto) -->
+                <div id="routeInstructions" style="display: none;">
+                    <h3 style="font-size: 0.9rem; opacity: 0.6; margin-bottom: 10px;">Indicaciones</h3>
+                    <div id="instructionsList"></div>
                 </div>
             </div>
 
-            <!-- CONTENEDOR DEL MAPA LEAFLET -->
+            <!-- Mapa -->
             <div class="map-container">
                 <div id="map"></div>
             </div>
         </div>
     </section>
 
-    <!-- LIBRERÍAS DE MAPAS -->
+    <!-- Leaflet Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
-
-
-    <!-- LÓGICA JAVASCRIPT DEL MAPA -->
+    
+    <!-- Lógica del Mapa -->
     <script>
-        // 1. Inicialización del mapa (centrado en Madrid por defecto)
         const map = L.map('map').setView([40.4168, -3.7038], 15);
 
-        // 2. Capa de mapa: Usamos estilo 'Dark Matter' para coincidir con el tema oscuro de la App
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-            subdomains: 'abcd',
+        // CartoDB Dark Matter for Dark Theme compatibility
+        L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>, &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors',
             maxZoom: 20
         }).addTo(map);
 
-        // --- Estado Global del Mapa ---
-        let routingControl = null;  // Controlador de ruta
-        let watchId = null;         // ID del watcher de GPS
-        let destinoLatLng = null;   // Coordenadas del destino
-        let carMarker = null;       // Marcador del coche del usuario
-        let hasAddedOriginSpots = false; // Flag para cargar plazas solo al inicio
+        let routingControl = null;
+        let watchId = null;
+        let destinoLatLng = null;
+        let carMarker = null;
+        let hasAddedOriginSpots = false;
 
-        // --- Iconos Personalizados ---
+        // Gestión de historial de búsquedas
+        function cargarHistorial() {
+            const historial = JSON.parse(localStorage.getItem('parkway_history') || '[]');
+            const historyList = document.getElementById('historyList');
+            
+            if (historial.length === 0) {
+                historyList.innerHTML = '<p style="text-align: center; opacity: 0.5; font-size: 0.9rem;">No hay búsquedas recientes</p>';
+                return;
+            }
+            
+            historyList.innerHTML = '';
+            historial.slice(0, 5).forEach(lugar => {
+                const item = document.createElement('div');
+                item.style.cssText = 'padding: 10px; background: rgba(124, 58, 237, 0.1); border-radius: 8px; margin-bottom: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: all 0.3s;';
+                item.innerHTML = `
+                    <i class="fa-solid fa-clock-rotate-left" style="color: #7c3aed;"></i>
+                    <span style="flex: 1;">${lugar}</span>
+                `;
+                item.addEventListener('mouseenter', () => item.style.background = 'rgba(124, 58, 237, 0.2)');
+                item.addEventListener('mouseleave', () => item.style.background = 'rgba(124, 58, 237, 0.1)');
+                item.addEventListener('click', () => {
+                    document.getElementById('searchInput').value = lugar;
+                    iniciarNavegacion();
+                });
+                historyList.appendChild(item);
+            });
+        }
 
-        // Icono de Coche (Usuario)
+        function guardarEnHistorial(lugar) {
+            let historial = JSON.parse(localStorage.getItem('parkway_history') || '[]');
+            // Eliminar duplicados
+            historial = historial.filter(h => h !== lugar);
+            // Añadir al principio
+            historial.unshift(lugar);
+            // Mantener solo los últimos 5
+            historial = historial.slice(0, 5);
+            localStorage.setItem('parkway_history', JSON.stringify(historial));
+            
+            // Actualizar visualmente la lista
+            cargarHistorial();
+        }
+
+        // Cargar historial al inicio
+        cargarHistorial();
+        
+        // Detectar cuando se borra el input para mostrar historial
+        document.getElementById('searchInput').addEventListener('input', function() {
+            if (this.value.trim() === '') {
+                document.getElementById('searchHistory').style.display = 'block';
+                document.getElementById('routeInstructions').style.display = 'none';
+                
+                // Opcional: detener la navegación actual
+                if (watchId) {
+                    navigator.geolocation.clearWatch(watchId);
+                    watchId = null;
+                }
+                if (routingControl) {
+                    map.removeControl(routingControl);
+                    routingControl = null;
+                }
+            }
+        });
+
+        // Custom Car Icon
         const carIcon = L.divIcon({
             className: 'custom-car-icon',
             html: `
@@ -147,10 +169,10 @@
                 <path fill="#7c3aed" d="M437 166L382 56H130L75 166c-28 6-49 31-49 61v155c0 18 14 32 32 32h21c6 0 11-4 13-9l15-45h298l15 45c2 5 7 9 13 9h21c18 0 32-14 32-32V227c0-30-21-55-49-61zM152 96h208l33 64H119l33-64zm-32 208c-18 0-32-14-32-32s14-32 32-32 32 14 32 32-14 32-32 32zm272 0c-18 0-32-14-32-32s14-32 32-32 32 14 32 32-14 32-32 32z"/>
             </svg>`,
             iconSize: [40, 40],
-            iconAnchor: [20, 20] // Centro del icono
+            iconAnchor: [20, 20]
         });
 
-        // Icono de Plaza Libre (Verde)
+        // Parking Spot Icon
         const parkingIcon = L.divIcon({
             className: 'parking-icon',
             html: `
@@ -161,39 +183,50 @@
             iconAnchor: [15, 15]
         });
 
-        /**
-         * Genera plazas de aparcamiento aleatorias alrededor de un punto.
-         * En producción, esto haría una llamada a Firestore con geo-queries.
-         */
+        // Generación de plazas libres simuladas (Demo)
         function addRandomParkingSpots(center) {
+            // Remove existing random markers if we wanted to refresh, but for now let's just add them once or nearby
             for (let i = 0; i < 8; i++) {
-                // Generar offset aleatorio pequeño (~100-500m)
+                // Random offset roughly within 1-2km
                 const latOffset = (Math.random() - 0.5) * 0.01;
                 const lngOffset = (Math.random() - 0.5) * 0.01;
 
-                L.marker([center.lat + latOffset, center.lng + lngOffset], { icon: parkingIcon })
+                const marker = L.marker([center.lat + latOffset, center.lng + lngOffset], { icon: parkingIcon })
                     .addTo(map)
-                    .bindPopup(`
-                        <div style="text-align: center;">
-                            <strong style="color: #10b981; font-size: 1.1rem;">🅿️ Plaza Libre</strong><br>
-                            <span style="color: #666;">Detectado hace ${Math.floor(Math.random() * 10) + 1} min</span><br>
-                            <button style="background: #7c3aed; color: white; border: none; padding: 4px 8px; border-radius: 4px; margin-top: 5px; cursor: pointer;">Ir aquí</button>
-                        </div>
-                    `);
+                    .bindPopup(`<b>🅿️ Plaza Libre</b><br>Libre hace ${Math.floor(Math.random() * 10) + 1} min`);
+
+                // Al hacer click en la plaza, navegar hacia ella
+                marker.on('click', function(e) {
+                    const plazaLatLng = e.target.getLatLng();
+                    destinoLatLng = plazaLatLng;
+                    
+                    // Actualizar input
+                    document.getElementById('searchInput').value = `Plaza de aparcamiento`;
+                    
+                    // Mostrar indicaciones y ocultar historial
+                    document.getElementById('searchHistory').style.display = 'none';
+                    document.getElementById('routeInstructions').style.display = 'block';
+                    
+                    // Iniciar seguimiento GPS
+                    if (watchId) navigator.geolocation.clearWatch(watchId);
+                    
+                    watchId = navigator.geolocation.watchPosition(actualizarPosicion,
+                        err => alert('Error GPS: ' + err.message),
+                        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+                    );
+                });
             }
         }
 
-        // 3. Geolocalización Inicial
+        // Geolocalización inicial automática
         map.locate({ setView: true, maxZoom: 16 });
 
-        // Evento: Usuario encontrado
         map.on('locationfound', (e) => {
             const actual = e.latlng;
             if (!carMarker) {
                 carMarker = L.marker(actual, { icon: carIcon }).addTo(map)
-                    .bindPopup("<b>Tu ubicación actual</b>").openPopup();
+                    .bindPopup("Estás aquí").openPopup();
 
-                // Cargar plazas cercanas simuladas
                 if (!hasAddedOriginSpots) {
                     addRandomParkingSpots(actual);
                     hasAddedOriginSpots = true;
@@ -202,142 +235,118 @@
         });
 
         map.on('locationerror', (e) => {
-            console.warn("No se pudo geolocalizar:", e.message);
-            // No mostramos alerta intrusiva, solo log, el usuario puede buscar manualmente
+            console.log("No se pudo localizar automáticamente:", e.message);
         });
 
-        /**
-         * Lógica principal: Busca destino y traza ruta
-         */
+        // Función principal de búsqueda y navegación
         async function iniciarNavegacion() {
             const destino = document.getElementById('searchInput').value;
-            if (!destino) return alert('Por favor, escribe un destino primero.');
+            if (!destino) return alert('Escribe un destino');
 
-            // Feedback visual en el botón
             const btn = document.querySelector('button[onclick="iniciarNavegacion()"]');
             const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Calculando ruta...';
-            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Buscando...';
 
             try {
-                // Geocodificación (Texto -> Coordenadas) usando Nominatim
                 const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(destino)}`;
                 const res = await fetch(url);
                 const data = await res.json();
 
                 if (!data.length) {
-                    throw new Error('Destino no encontrado');
+                    alert('Destino no encontrado');
+                    btn.innerHTML = originalText;
+                    return;
                 }
 
-                // Guardar destino
                 destinoLatLng = L.latLng(data[0].lat, data[0].lon);
 
-                // Activar seguimiento GPS en tiempo real
+                // Guardar en historial y cambiar vista
+                guardarEnHistorial(destino);
+                document.getElementById('searchHistory').style.display = 'none';
+                document.getElementById('routeInstructions').style.display = 'block';
+
                 if (watchId) navigator.geolocation.clearWatch(watchId);
 
-                // WatchPosition se ejecutará cada vez que el GPS cambie
-                watchId = navigator.geolocation.watchPosition(
-                    actualizarPosicion, // Éxito
-                    err => {           // Error
-                        console.error(err);
-                        alert('Error de GPS: ' + err.message);
+                watchId = navigator.geolocation.watchPosition(actualizarPosicion,
+                    err => {
+                        alert('Error GPS: ' + err.message);
                         btn.innerHTML = originalText;
-                        btn.disabled = false;
                     },
                     { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
                 );
-
             } catch (e) {
                 console.error(e);
-                alert(e.message === 'Destino no encontrado' ? 'No encontramos esa dirección.' : "Error al conectar con el servicio de mapas.");
+                alert("Error al conectar con el servicio de mapas.");
                 btn.innerHTML = originalText;
-                btn.disabled = false;
             }
         }
 
-        /**
-         * Se ejecuta cada vez que el GPS reporta una nueva posición
-         */
+        // Seguimiento GPS continuo
         function actualizarPosicion(pos) {
             const lat = pos.coords.latitude;
             const lng = pos.coords.longitude;
             const actual = L.latLng(lat, lng);
 
-            // Actualizar marcador del coche
             if (!carMarker) {
                 carMarker = L.marker(actual, { icon: carIcon }).addTo(map);
-                // Si es la primera vez que tenemos posición, cargamos plazas ambiente
+
+                // First time locating user: Clear defaults and add spots near USER
                 if (!hasAddedOriginSpots) {
-                    addRandomParkingSpots(actual);
+                    addRandomParkingSpots(actual, true);
                     hasAddedOriginSpots = true;
                 }
             } else {
                 carMarker.setLatLng(actual);
             }
 
-            // Mover cámara suavemente
+            // Zoom más suave
             map.setView(actual, 18, { animate: true });
 
-            // Calcular ruta si hay destino
+            // Routing only if destination is set
             if (destinoLatLng) {
                 if (routingControl) map.removeControl(routingControl);
 
                 routingControl = L.Routing.control({
                     waypoints: [actual, destinoLatLng],
-                    show: false, // Usamos nuestro propio panel UI, ocultamos el nativo
+                    show: false, // Ocultar panel por defecto de leaflet
                     routeWhileDragging: false,
-                    language: 'es', // Idioma de las instrucciones
+                    language: 'es',
                     lineOptions: {
                         styles: [{ color: '#7c3aed', weight: 6, opacity: 0.9, shadowBlur: 10, shadowColor: '#7c3aed' }]
                     },
-                    createMarker: function () { return null; } // No poner marcadores extraños de A->B de la librería
+                    createMarker: function () { return null; } // Evitar marcadores extra
                 }).addTo(map);
 
-                // Cuando la ruta se calcula, mostramos las instrucciones
                 routingControl.on('routesfound', e => mostrarIndicaciones(e));
             }
         }
 
-        /**
-         * Renderiza las instrucciones paso a paso en el panel lateral
-         */
+        // Renderizado de instrucciones de ruta
         function mostrarIndicaciones(e) {
-            const div = document.getElementById('routeInstructions');
-            div.innerHTML = ''; // Limpiar anterior
+            const div = document.getElementById('instructionsList');
+            div.innerHTML = '';
 
-            const r = e.routes[0]; // Mejor ruta encontrada
+            const r = e.routes[0];
+            div.innerHTML += `<div style="margin-bottom: 10px; padding: 10px; background: rgba(124, 58, 237, 0.1); border-radius: 8px;">
+                                <div style="font-size: 1.2rem; color: #fff;">${(r.summary.totalTime / 60).toFixed(0)} min</div>
+                                <div style="color: #ccc;">${(r.summary.totalDistance / 1000).toFixed(1)} km</div>
+                              </div>`;
 
-            // Resumen (Tiempo y Distancia)
-            div.innerHTML += `
-                <div style="margin-bottom: 15px; padding: 15px; background: rgba(124, 58, 237, 0.1); border-radius: 12px; border: 1px solid rgba(124, 58, 237, 0.3);">
-                    <div style="font-size: 1.4rem; color: #fff; font-weight: bold;">
-                        <i class="fa-solid fa-clock"></i> ${(r.summary.totalTime / 60).toFixed(0)} min
-                    </div>
-                    <div style="color: #ccc; margin-top: 5px;">
-                        <i class="fa-solid fa-road"></i> ${(r.summary.totalDistance / 1000).toFixed(1)} km
-                    </div>
-                </div>`;
-
-            // Lista de pasos
             r.instructions.forEach(i => {
-                // Iconos según el tipo de maniobra
-                let icon = '<i class="fa-solid fa-arrow-up"></i>';
-                if (i.type === 'TurnLeft') icon = '<i class="fa-solid fa-arrow-left"></i>';
-                if (i.type === 'TurnRight') icon = '<i class="fa-solid fa-arrow-right"></i>';
-                if (i.type === 'Roundabout') icon = '<i class="fa-solid fa-spin fa-rotate-right"></i>';
-                if (i.type === 'DestinationReached') icon = '<i class="fa-solid fa-flag-checkered" style="color: var(--accent-main);"></i>';
+                let icon = '➡️';
+                if (i.type === 'TurnLeft') icon = '⬅️';
+                if (i.type === 'TurnRight') icon = '➡️';
+                if (i.type === 'Roundabout') icon = '🔄';
 
-                div.innerHTML += `
-                    <div style="display: flex; gap: 15px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); align-items: center;">
-                        <span style="font-size: 1.2rem; width: 30px; text-align: center;">${icon}</span>
-                        <span style="font-size: 0.95rem; line-height: 1.4;">${i.text}</span>
-                    </div>`;
+                div.innerHTML += `<div style="display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                    <span>${icon}</span>
+                                    <span>${i.text}</span>
+                                  </div>`;
             });
 
-            // Restaurar botón (ya estamos navegando)
+            // Restore btn
             const btn = document.querySelector('button[onclick="iniciarNavegacion()"]');
-            btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> Recalcular Ruta';
-            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-location-arrow"></i> Actualizando...';
         }
     </script>
 </body>
