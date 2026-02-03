@@ -37,8 +37,16 @@
                     </button>
                 </div>
 
-                <div id="routeInstructions">
-                    <p style="text-align: center; opacity: 0.6;">Las indicaciones aparecerán aquí.</p>
+                <!-- Historial de búsquedas recientes -->
+                <div id="searchHistory" style="margin-top: 20px;">
+                    <h3 style="font-size: 0.9rem; opacity: 0.6; margin-bottom: 10px;">Búsquedas recientes</h3>
+                    <div id="historyList"></div>
+                </div>
+
+                <!-- Indicaciones de ruta (oculto por defecto) -->
+                <div id="routeInstructions" style="display: none;">
+                    <h3 style="font-size: 0.9rem; opacity: 0.6; margin-bottom: 10px;">Indicaciones</h3>
+                    <div id="instructionsList"></div>
                 </div>
             </div>
 
@@ -52,15 +60,14 @@
     <!-- Leaflet Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
-
+    
     <!-- Map Logic -->
     <script>
         const map = L.map('map').setView([40.4168, -3.7038], 15);
 
         // CartoDB Dark Matter for Dark Theme compatibility
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-            subdomains: 'abcd',
+        L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>, &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors',
             maxZoom: 20
         }).addTo(map);
 
@@ -68,7 +75,69 @@
         let watchId = null;
         let destinoLatLng = null;
         let carMarker = null;
+        let hasAddedOriginSpots = false;
 
+        // Gestión de historial de búsquedas
+        function cargarHistorial() {
+            const historial = JSON.parse(localStorage.getItem('parkway_history') || '[]');
+            const historyList = document.getElementById('historyList');
+            
+            if (historial.length === 0) {
+                historyList.innerHTML = '<p style="text-align: center; opacity: 0.5; font-size: 0.9rem;">No hay búsquedas recientes</p>';
+                return;
+            }
+            
+            historyList.innerHTML = '';
+            historial.slice(0, 5).forEach(lugar => {
+                const item = document.createElement('div');
+                item.style.cssText = 'padding: 10px; background: rgba(124, 58, 237, 0.1); border-radius: 8px; margin-bottom: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: all 0.3s;';
+                item.innerHTML = `
+                    <i class="fa-solid fa-clock-rotate-left" style="color: #7c3aed;"></i>
+                    <span style="flex: 1;">${lugar}</span>
+                `;
+                item.addEventListener('mouseenter', () => item.style.background = 'rgba(124, 58, 237, 0.2)');
+                item.addEventListener('mouseleave', () => item.style.background = 'rgba(124, 58, 237, 0.1)');
+                item.addEventListener('click', () => {
+                    document.getElementById('searchInput').value = lugar;
+                    iniciarNavegacion();
+                });
+                historyList.appendChild(item);
+            });
+        }
+
+        function guardarEnHistorial(lugar) {
+    let historial = JSON.parse(localStorage.getItem('parkway_history') || '[]');
+    // Eliminar duplicados
+    historial = historial.filter(h => h !== lugar);
+    // Añadir al principio
+    historial.unshift(lugar);
+    // Mantener solo los últimos 5
+    historial = historial.slice(0, 5);
+    localStorage.setItem('parkway_history', JSON.stringify(historial));
+    
+    // Actualizar visualmente la lista
+    cargarHistorial();
+}
+
+        // Cargar historial al inicio
+        cargarHistorial();
+        // Detectar cuando se borra el input para mostrar historial
+document.getElementById('searchInput').addEventListener('input', function() {
+    if (this.value.trim() === '') {
+        document.getElementById('searchHistory').style.display = 'block';
+        document.getElementById('routeInstructions').style.display = 'none';
+        
+        // Opcional: detener la navegación actual
+        if (watchId) {
+            navigator.geolocation.clearWatch(watchId);
+            watchId = null;
+        }
+        if (routingControl) {
+            map.removeControl(routingControl);
+            routingControl = null;
+        }
+    }
+});
         // Custom Car Icon
         const carIcon = L.divIcon({
             className: 'custom-car-icon',
@@ -99,9 +168,30 @@
                 const latOffset = (Math.random() - 0.5) * 0.01;
                 const lngOffset = (Math.random() - 0.5) * 0.01;
 
-                L.marker([center.lat + latOffset, center.lng + lngOffset], { icon: parkingIcon })
-                    .addTo(map)
-                    .bindPopup(`<b>🅿️ Plaza Libre</b><br>Libre hace ${Math.floor(Math.random() * 10) + 1} min`);
+                const marker = L.marker([center.lat + latOffset, center.lng + lngOffset], { icon: parkingIcon })
+    .addTo(map)
+    .bindPopup(`<b>🅿️ Plaza Libre</b><br>Libre hace ${Math.floor(Math.random() * 10) + 1} min`);
+
+// Al hacer click en la plaza, navegar hacia ella
+marker.on('click', function(e) {
+    const plazaLatLng = e.target.getLatLng();
+    destinoLatLng = plazaLatLng;
+    
+    // Actualizar input
+    document.getElementById('searchInput').value = `Plaza de aparcamiento`;
+    
+    // Mostrar indicaciones y ocultar historial
+    document.getElementById('searchHistory').style.display = 'none';
+    document.getElementById('routeInstructions').style.display = 'block';
+    
+    // Iniciar seguimiento GPS
+    if (watchId) navigator.geolocation.clearWatch(watchId);
+    
+    watchId = navigator.geolocation.watchPosition(actualizarPosicion,
+        err => alert('Error GPS: ' + err.message),
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+    );
+});
             }
         }
 
@@ -129,6 +219,11 @@
                 }
 
                 destinoLatLng = L.latLng(data[0].lat, data[0].lon);
+
+                // Guardar en historial y cambiar vista
+                guardarEnHistorial(destino);
+                document.getElementById('searchHistory').style.display = 'none';
+                document.getElementById('routeInstructions').style.display = 'block';
 
                 if (watchId) navigator.geolocation.clearWatch(watchId);
 
@@ -173,6 +268,7 @@
                 waypoints: [actual, destinoLatLng],
                 show: false, // Ocultar panel por defecto de leaflet
                 routeWhileDragging: false,
+                language: 'es',
                 lineOptions: {
                     styles: [{ color: '#7c3aed', weight: 6, opacity: 0.9, shadowBlur: 10, shadowColor: '#7c3aed' }]
                 },
@@ -184,7 +280,7 @@
 
         // 3. Mostrar Indicaciones
         function mostrarIndicaciones(e) {
-            const div = document.getElementById('routeInstructions');
+            const div = document.getElementById('instructionsList');
             div.innerHTML = '';
 
             const r = e.routes[0];
