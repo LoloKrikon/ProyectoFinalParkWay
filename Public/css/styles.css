@@ -12,7 +12,7 @@
     --accent-main: #6366f1;
     /* Indigo Main */
 
-    /* New Title Gradient: Cyan to Blue (Distinct from purple) */
+    /* Gradients */
     --title-gradient: linear-gradient(to right, #22d3ee, #3b82f6);
 
     --accent-glow: rgba(99, 102, 241, 0.4);
@@ -74,7 +74,7 @@ body {
     box-shadow: none;
 }
 
-/* NUEVO: Estilo Botón Google */
+/* Google & Social Buttons */
 .google-btn {
     background: white;
     color: #333;
@@ -730,7 +730,7 @@ body {
     font-weight: 700;
 }
 
-/* --- NUEVOS ESTILOS: GUEST & LOGOUT --- */
+/* Guest Mode & Logout UI */
 .guest-container {
     display: flex;
     flex-direction: column;

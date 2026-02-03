@@ -53,7 +53,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
 
-    <!-- Map Logic -->
+    <!-- Lógica del Mapa -->
     <script>
         const map = L.map('map').setView([40.4168, -3.7038], 15);
 
@@ -78,7 +78,7 @@
             iconAnchor: [20, 20]
         });
 
-        // Auto-locate on load
+        // Geolocalización automática de inicio
         map.locate({ setView: true, maxZoom: 18 });
 
         function onLocationFound(e) {
@@ -95,6 +95,7 @@
         map.on('locationfound', onLocationFound);
         map.on('locationerror', onLocationError);
 
+        // Simula la acción de liberar plaza (Feedback visual)
         function liberarPlaza() {
             if (!myMarker) {
                 alert("Esperando señal GPS...");
