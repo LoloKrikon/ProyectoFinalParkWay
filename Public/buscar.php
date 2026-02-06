@@ -7,29 +7,90 @@
         $pageTitle = 'ParkWay - Buscar Aparcamiento';
         
         // CSS extra para Leaflet y estilos específicos del nuevo diseño
-        $extraCss = '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-                     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
-                     <style>
-                        /* Local Override */
-                        .search-input-alt {
-                            background: rgba(0, 0, 0, 0.3);
-                            border: 1px solid rgba(255, 255, 255, 0.1);
-                            padding: 12px;
-                            border-radius: 8px;
-                            color: white;
-                            width: 100%;
-                            outline: none;
-                        }
+        // CSS extra para Leaflet y estilos específicos del nuevo diseño
+        $extraCss = <<<EOT
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+<style>
+    /* Local Override */
+    .search-input-alt {
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 12px;
+        border-radius: 8px;
+        color: white;
+        width: 100%;
+        outline: none;
+    }
 
-                        .search-input-alt:focus {
-                            border-color: var(--accent-main);
-                        }
+    .search-input-alt:focus {
+        border-color: var(--accent-main);
+    }
 
-                        /* Hide Leaflet Default Control Container if needed or style it */
-                        .leaflet-control-container .leaflet-routing-container-hide {
-                            display: none;
-                        }
-                     </style>';
+    /* Hide Leaflet Default Control Container if needed or style it */
+    .leaflet-control-container .leaflet-routing-container-hide {
+        display: none;
+    }
+
+    /* Crosshair (Cruceta) */
+    .center-crosshair {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 20px;
+        height: 20px;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+        z-index: 1000;
+        display: none; /* Hidden by default */
+    }
+    .center-crosshair::before, .center-crosshair::after {
+        content: '';
+        position: absolute;
+        background: rgba(255, 255, 255, 0.8);
+        box-shadow: 0 0 4px rgba(0,0,0,0.5);
+    }
+    .center-crosshair::before {
+        top: 9px; left: 0; width: 20px; height: 2px; /* Horizontal */
+    }
+    .center-crosshair::after {
+        top: 0; left: 9px; width: 2px; height: 20px; /* Vertical */
+    }
+
+    /* Floating Controls */
+    .floating-controls {
+        position: absolute;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 15px;
+        z-index: 1000;
+    }
+    .float-btn {
+        background: rgba(30, 30, 30, 0.9);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 10px 20px;
+        border-radius: 50px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        transition: all 0.3s;
+    }
+    .float-btn:hover {
+        background: var(--accent-main);
+        transform: translateY(-2px);
+    }
+    .float-btn.active {
+        background: var(--accent-main);
+        border-color: var(--accent-main);
+    }
+</style>
+EOT;
     ?>
     <!-- Inclusión del head común -->
     <?php include 'includes/head.php'; ?>
@@ -72,8 +133,21 @@
             </div>
 
             <!-- Mapa -->
-            <div class="map-container">
+            <div class="map-container" style="position: relative;">
                 <div id="map"></div>
+                
+                <!-- Crosshair Overlay -->
+                <div id="crosshair" class="center-crosshair"></div>
+
+                <!-- Floating Controls -->
+                <div class="floating-controls">
+                    <button class="float-btn" onclick="localizarUsuario()">
+                        <i class="fa-solid fa-crosshairs"></i> Localizar
+                    </button>
+                    <button id="btn-moverme" class="float-btn" onclick="toggleMoverme()">
+                        <i class="fa-solid fa-up-down-left-right"></i> Moverme
+                    </button>
+                </div>
             </div>
         </div>
     </section>
@@ -83,7 +157,7 @@
     <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
     
     <!-- Lógica del Mapa -->
-    <script>
+    <script type="module">
         const map = L.map('map').setView([40.4168, -3.7038], 15);
 
         // CartoDB Dark Matter for Dark Theme compatibility
@@ -183,97 +257,130 @@
             iconAnchor: [15, 15]
         });
 
-        // Generación de plazas libres simuladas (Demo)
-        function addRandomParkingSpots(center) {
-            // Remove existing random markers if we wanted to refresh, but for now let's just add them once or nearby
-            for (let i = 0; i < 8; i++) {
-                // Random offset roughly within 1-2km
-                const latOffset = (Math.random() - 0.5) * 0.01;
-                const lngOffset = (Math.random() - 0.5) * 0.01;
+        // -------------------------------------------------------------
+        //  LÓGICA REAL: ESCUCHAR PLAZAS DE LA COMUNIDAD (Firebase)
+        // -------------------------------------------------------------
+        import { db } from './js/firebase-config.js';
+        import { collection, onSnapshot, query, where, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-                const marker = L.marker([center.lat + latOffset, center.lng + lngOffset], { icon: parkingIcon })
-                    .addTo(map)
-                    .bindPopup(`<b>🅿️ Plaza Libre</b><br>Libre hace ${Math.floor(Math.random() * 10) + 1} min`);
+        const markers = {}; // Almacén de marcadores activos para poder borrarlos si se ocupan
 
-                // Al hacer click en la plaza, navegar hacia ella
-                marker.on('click', function(e) {
-                    const plazaLatLng = e.target.getLatLng();
-                    destinoLatLng = plazaLatLng;
-                    
-                    // Actualizar input
-                    document.getElementById('searchInput').value = `Plaza de aparcamiento`;
-                    
-                    // Mostrar indicaciones y ocultar historial
-                    document.getElementById('searchHistory').style.display = 'none';
-                    document.getElementById('routeInstructions').style.display = 'block';
-                    
-                    // Iniciar seguimiento GPS
-                    if (watchId) navigator.geolocation.clearWatch(watchId);
-                    
-                    watchId = navigator.geolocation.watchPosition(actualizarPosicion,
-                        err => alert('Error GPS: ' + err.message),
-                        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
-                    );
+        function escucharPlazasLibres() {
+            // Escuchar cambios en tiempo real en la colección 'plazas_libres'
+            // Filtramos solo las que estén en estado 'free'
+            const q = query(
+                collection(db, "plazas_libres"), 
+                where("status", "==", "free"),
+                limit(50) 
+            );
+
+            onSnapshot(q, (snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    const data = change.doc.data();
+                    const docId = change.doc.id;
+                    const { location, timestamp, userName } = data;
+
+                    if (change.type === "added") {
+                        // Añadir marcador al mapa
+                        if (location) {
+                            // Calcular hace cuánto se liberó
+                            let timeAgo = "Recientemente";
+                            if (timestamp) {
+                                const diff = new Date() - timestamp.toDate();
+                                const min = Math.floor(diff / 60000);
+                                timeAgo = min < 1 ? "Ahora mismo" : `Hace ${min} min`;
+                            }
+
+                            const marker = L.marker([location.latitude, location.longitude], { icon: parkingIcon })
+                                .addTo(map)
+                                .bindPopup(`
+                                    <div style="text-align: center;">
+                                        <b>🅿️ Plaza Libre</b><br>
+                                        <span style="font-size: 0.85rem; color: #aaa;">Por: ${userName || 'Anónimo'}</span><br>
+                                        <span style="color: #10b981; font-weight: bold;">${timeAgo}</span><br>
+                                        <button onclick="navegarA('${location.latitude}', '${location.longitude}')" 
+                                            style="margin-top: 8px; background: #7c3aed; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
+                                            <i class="fa-solid fa-location-arrow"></i> Ir aquí
+                                        </button>
+                                    </div>
+                                `);
+                            
+                            markers[docId] = marker;
+                        }
+                    }
+                    if (change.type === "modified") {
+                        // Si cambia de estado (ej. se ocupa), podríamos actualizar el icono o borrarlo
+                        // Por ahora, si deja de ser 'free', el query filter lo trataría como removed en muchos casos, 
+                        // pero si solo cambia otro dato, actualizamos el popup.
+                    }
+                    if (change.type === "removed") {
+                        // Si se elimina de la base de datos o cambia de estado a 'ocupado'
+                        if (markers[docId]) {
+                            map.removeLayer(markers[docId]);
+                            delete markers[docId];
+                        }
+                    }
                 });
-            }
+            }, (error) => {
+                console.error("Error escuchando plazas:", error);
+            });
         }
 
-        // Geolocalización inicial automática
-        map.locate({ setView: true, maxZoom: 16 });
+        // Exponer función global para el botón del popup (fuera del módulo)
+        window.navegarA = function(lat, lng) {
+            destinoLatLng = L.latLng(lat, lng);
+            document.getElementById('searchInput').value = `Plaza detectada`;
+            iniciarNavegacion(true); // true = modo directo
+        };
 
-        map.on('locationfound', (e) => {
-            const actual = e.latlng;
-            if (!carMarker) {
-                carMarker = L.marker(actual, { icon: carIcon }).addTo(map)
-                    .bindPopup("Estás aquí").openPopup();
-
-                if (!hasAddedOriginSpots) {
-                    addRandomParkingSpots(actual);
-                    hasAddedOriginSpots = true;
-                }
-            }
-        });
-
+        // map.locate ya no es necesario como principal fuente, usamos watchPosition abajo.
+        // Pero mantenemos un listener d error simple por si acaso.
         map.on('locationerror', (e) => {
-            console.log("No se pudo localizar automáticamente:", e.message);
+            console.log("Error de localización Leaflet:", e.message);
+            escucharPlazasLibres(); // Cargar plazas de todas formas
         });
+        
+        // Iniciamos escucha de plazas inmediatamente
+        escucharPlazasLibres();
 
         // Función principal de búsqueda y navegación
-        async function iniciarNavegacion() {
+        window.iniciarNavegacion = async function(isDirectMode = false) {
             const destino = document.getElementById('searchInput').value;
-            if (!destino) return alert('Escribe un destino');
+            if (!destino && !isDirectMode) return alert('Escribe un destino');
 
             const btn = document.querySelector('button[onclick="iniciarNavegacion()"]');
             const originalText = btn.innerHTML;
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Buscando...';
 
             try {
-                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(destino)}`;
-                const res = await fetch(url);
-                const data = await res.json();
+                if (!isDirectMode) {
+                    // Solo buscar en API si NO estamos en modo directo (click en plaza)
+                    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(destino)}`;
+                    const res = await fetch(url);
+                    const data = await res.json();
 
-                if (!data.length) {
-                    alert('Destino no encontrado');
-                    btn.innerHTML = originalText;
-                    return;
+                    if (!data.length) {
+                        alert('Destino no encontrado');
+                        btn.innerHTML = originalText;
+                        return;
+                    }
+                    destinoLatLng = L.latLng(data[0].lat, data[0].lon);
                 }
+                
+                // Si esDirectMode, destinoLatLng ya fue seteado por navegarA() antes de llamar a esta funcion
 
-                destinoLatLng = L.latLng(data[0].lat, data[0].lon);
+                // Guardar en historial y cambiar vista
 
                 // Guardar en historial y cambiar vista
                 guardarEnHistorial(destino);
                 document.getElementById('searchHistory').style.display = 'none';
                 document.getElementById('routeInstructions').style.display = 'block';
 
-                if (watchId) navigator.geolocation.clearWatch(watchId);
-
-                watchId = navigator.geolocation.watchPosition(actualizarPosicion,
-                    err => {
-                        alert('Error GPS: ' + err.message);
-                        btn.innerHTML = originalText;
-                    },
-                    { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
-                );
+                // Forzar actualización de ruta con la posición actual si existe
+                if (lastKnownPos) actualizarPosicion({ coords: { latitude: lastKnownPos.lat, longitude: lastKnownPos.lng } });
+                
+                // Ya tenemos un watchId global, no necesitamos otro aquí que sobreescriba
+                // Solo nos aseguramos de que el panel de instrucciones se actualice
             } catch (e) {
                 console.error(e);
                 alert("Error al conectar con el servicio de mapas.");
@@ -281,45 +388,140 @@
             }
         }
 
+        let isManualMode = true; 
+        let isFreeRoam = false;  // Modo 'Conducción Virtual' (Cruz visible + Coche sigue centro)
+        let isVirtualLocation = false; // Nuevo: Si estamos en una ubicación virtual fija (Coche quieto donde lo dejamos)
+        let lastKnownPos = null;
+
         // Seguimiento GPS continuo
         function actualizarPosicion(pos) {
             const lat = pos.coords.latitude;
             const lng = pos.coords.longitude;
             const actual = L.latLng(lat, lng);
+            
+            // Siempre guardamos la última posición real GPS
+            lastKnownPos = actual;
+
+            // Si estamos en modo moverme O en modo virtual fijo, NO tocamos el coche con el GPS
+            if (isFreeRoam || isVirtualLocation) return;
 
             if (!carMarker) {
                 carMarker = L.marker(actual, { icon: carIcon }).addTo(map);
-
-                // First time locating user: Clear defaults and add spots near USER
+                
                 if (!hasAddedOriginSpots) {
-                    addRandomParkingSpots(actual, true);
+                    map.setView(actual, 16);
+                    addRandomParkingSpots(actual, true); 
                     hasAddedOriginSpots = true;
                 }
             } else {
                 carMarker.setLatLng(actual);
             }
 
-            // Zoom más suave
-            map.setView(actual, 18, { animate: true });
+            actualizarRuta(actual); 
+        }
 
-            // Routing only if destination is set
+        function actualizarRuta(origen) {
             if (destinoLatLng) {
                 if (routingControl) map.removeControl(routingControl);
 
                 routingControl = L.Routing.control({
-                    waypoints: [actual, destinoLatLng],
-                    show: false, // Ocultar panel por defecto de leaflet
+                    waypoints: [origen, destinoLatLng],
+                    show: false,
                     routeWhileDragging: false,
                     language: 'es',
                     lineOptions: {
                         styles: [{ color: '#7c3aed', weight: 6, opacity: 0.9, shadowBlur: 10, shadowColor: '#7c3aed' }]
                     },
-                    createMarker: function () { return null; } // Evitar marcadores extra
+                    createMarker: function () { return null; }
                 }).addTo(map);
 
                 routingControl.on('routesfound', e => mostrarIndicaciones(e));
             }
         }
+
+        // --- Evento: Mover el "Coche Fantasma" con el mapa ---
+        map.on('move', () => {
+             // Solo mover si estamos EDITANDO la posición (Cruz visible)
+             if (isFreeRoam && carMarker) {
+                 const center = map.getCenter();
+                 carMarker.setLatLng(center);
+             }
+        });
+
+        // --- Funciones de Control Manual ---
+
+        if (navigator.geolocation) {
+            watchId = navigator.geolocation.watchPosition(actualizarPosicion, 
+                (err) => console.warn("Error GPS:", err),
+                { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+            );
+        } else {
+            alert("Tu navegador no soporta geolocalización.");
+        }
+
+        window.localizarUsuario = function() {
+            // AL PULSAR LOCALIZAR:
+            // 1. Quitamos modo FreeRoam si estuviera (Cruz fuera)
+            if (isFreeRoam) window.toggleMoverme();
+            
+            // 2. Quitamos modo Virtual Fijo (volvemos a GPS real)
+            isVirtualLocation = false;
+
+            // 3. Forzamos la vuelta al GPS
+            if (lastKnownPos) {
+                map.flyTo(lastKnownPos, 18, { animate: true, duration: 0.8 });
+                if (carMarker) {
+                    carMarker.setLatLng(lastKnownPos);
+                    carMarker.setOpacity(1);
+                    actualizarRuta(lastKnownPos);
+                }
+            } else {
+                alert("Buscando tu ubicación...");
+                map.locate({ setView: true, maxZoom: 18 });
+            }
+        };
+
+        window.toggleMoverme = function() {
+            const crosshair = document.getElementById('crosshair');
+            const btn = document.getElementById('btn-moverme');
+            
+            if (isFreeRoam) {
+                // --- AL PULSAR "LISTO" (Desactivar cruceta) ---
+                isFreeRoam = false; 
+
+                // UI
+                crosshair.style.display = 'none';
+                btn.classList.remove('active');
+                btn.innerHTML = '<i class="fa-solid fa-up-down-left-right"></i> Moverme';
+                
+                // LÓGICA CRÍTICA:
+                // NO volvemos al GPS. Nos quedamos en "Modo Virtual Fijo".
+                isVirtualLocation = true;
+                
+                // El coche SE QUEDA donde estaba la cruz (centro del mapa en ese momento)
+                // No llamamos a panTo ni setLatLng a lastKnownPos.
+                
+                // Opcional: Recalcular ruta desde esta nueva ubicación virtual
+                if (carMarker) actualizarRuta(carMarker.getLatLng());
+
+            } else {
+                // --- AL PULSAR "MOVERME" (Activar cruceta) ---
+                isFreeRoam = true;
+                // isVirtualLocation da igual aquí, porque isFreeRoam tiene prioridad en move handler
+
+                // UI
+                crosshair.style.display = 'block';
+                btn.classList.add('active');
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> Listo';
+                
+                // Traemos el coche al centro para empezar a moverlo
+                if (carMarker) {
+                    carMarker.setLatLng(map.getCenter());
+                }
+            }
+        };
+
+
 
         // Renderizado de instrucciones de ruta
         function mostrarIndicaciones(e) {

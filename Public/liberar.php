@@ -51,10 +51,10 @@
                         ¿Vas a salir? Confirma tu ubicación para avisar a otros conductores y ayudar a la comunidad ParkWay.
                     </p>
                     
-                    <!-- Botón de Acción Principal -->
-                    <button onclick="liberarPlaza()" class="primary-btn"
-                        style="width: 100%; padding: 14px; background: linear-gradient(135deg, #10b981, #059669); font-weight: bold; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);">
-                        <i class="fa-solid fa-check-circle"></i> Liberar mi sitio aquí
+                    <!-- Botón de Acción Principal: Liberar -->
+                    <button id="btn-liberar" onclick="liberarPlaza()" class="primary-btn"
+                        style="width: 100%; padding: 14px; background: linear-gradient(135deg, #10b981, #059669); font-weight: bold; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); margin-bottom: 15px;">
+                        <i class="fa-solid fa-share-from-square"></i> Liberar mi sitio aquí
                     </button>
                     
                     <!-- Área de mensajes de estado (éxito/error) -->
@@ -80,7 +80,7 @@
     <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
 
     <!-- LÓGICA JAVASCRIPT -->
-    <script>
+    <script type="module">
         // 1. Inicialización del mapa
         const map = L.map('map').setView([40.4168, -3.7038], 15);
 
@@ -128,47 +128,72 @@
         map.on('locationfound', onLocationFound);
         map.on('locationerror', onLocationError);
 
+        // -------------------------------------------------------------
+        //  LÓGICA: GESTIÓN DE PLAZAS (Liberar y Ocupar)
+        // -------------------------------------------------------------
+        
+        import { db, auth } from './js/firebase-config.js';
+        import { collection, addDoc, serverTimestamp, GeoPoint } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
         /**
-         * Simula la acción de liberar una plaza.
-         * Envía feedback visual al usuario tras "conectar" con el servidor (simulado).
+         * Acción 1: LIBERAR PLAZA (Dejar libre para otros)
          */
-        function liberarPlaza() {
+        window.liberarPlaza = async function() {
             if (!myMarker) {
                 alert("Necesitamos tu ubicación GPS para liberar la plaza.");
                 return;
             }
             
-            const btn = document.querySelector('button[onclick="liberarPlaza()"]');
+            const btn = document.getElementById('btn-liberar');
             const statusDiv = document.getElementById('statusMessage');
+            const user = auth.currentUser;
             
-            // Estado Cargando
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Procesando...';
+            if (!user) {
+                alert("Debes iniciar sesión para colaborar.");
+                return;
+            }
+
+            // UI: Cargando
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando ubicación...';
             btn.disabled = true;
 
-            // Simulación de petición al servidor (1.5 segundos)
-            setTimeout(() => {
-                // Estado: Completado
+            try {
+                // Guardar en Firestore
+                const coords = myMarker.getLatLng();
+                await addDoc(collection(db, "plazas_libres"), {
+                    location: new GeoPoint(coords.lat, coords.lng),
+                    timestamp: serverTimestamp(),
+                    userId: user.uid,
+                    userName: user.displayName || "Usuario Anónimo",
+                    status: 'free', // Estado: disponible
+                    type: 'user_report' 
+                });
+
+                // UI: Éxito
                 btn.innerHTML = '<i class="fa-solid fa-check"></i> ¡Sitio Liberado!';
-                
-                // Mostrar mensaje de éxito
                 statusDiv.innerHTML = `
                     <div style="background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 10px; border-radius: 8px;">
-                        <strong>¡Gracias!</strong><br>Tu plaza ahora es visible para otros usuarios.
+                        <strong>¡Gracias!</strong><br>Tu plaza es visible en el mapa en tiempo real.
                     </div>
                 `;
                 statusDiv.classList.add('visible');
-                
-                // Aquí iría la lógica real:
-                // await addDoc(collection(db, "plazas"), { ...coords, timestamp: serverTimestamp() });
 
-                // Resetear botón después de 3 segundos
+                // Reset
                 setTimeout(() => {
-                    btn.innerHTML = '<i class="fa-solid fa-check-circle"></i> Liberar mi sitio aquí';
+                    btn.innerHTML = '<i class="fa-solid fa-share-from-square"></i> Liberar mi sitio aquí';
                     btn.disabled = false;
-                }, 4000);
+                    statusDiv.classList.remove('visible');
+                }, 5000);
 
-            }, 1500);
-        }
+            } catch (error) {
+                console.error("Error al liberar plaza:", error);
+                alert("Error al guardar: " + error.message);
+                btn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Reintentar';
+                btn.disabled = false;
+            }
+        };
+
+
     </script>
 </body>
 </html>

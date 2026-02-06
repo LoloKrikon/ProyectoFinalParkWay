@@ -9,13 +9,12 @@
         <h2 class="mini-logo">ParkWay</h2>
     </div>
 
-    <!-- Controles Derecha -->
     <div class="header-right">
         
         <!-- Botón Perfil (Condicional) -->
         <?php if (isset($showProfile) && $showProfile): ?>
-            <a href="perfil.php" class="icon-btn" title="Mi Perfil" style="margin-right: 10px;">
-                <i class="fa-solid fa-user"></i>
+            <a href="perfil.php" class="secondary-btn" title="Mi Perfil" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-user"></i> Ver perfil
             </a>
         <?php endif; ?>
         

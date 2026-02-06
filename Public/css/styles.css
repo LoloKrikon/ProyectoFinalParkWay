@@ -133,6 +133,15 @@ body {
     background: radial-gradient(circle at center, #1f2937 0%, #111827 100%);
 }
 
+/* Fix for Plataformas View Navbar to ensure centering works */
+#platform-view .app-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 10;
+}
+
 .landing-content {
     text-align: center;
     z-index: 2;
@@ -312,6 +321,17 @@ body {
     gap: 1rem;
     overflow-x: auto;
     padding-bottom: 10px;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.header-right .secondary-btn,
+.header-right .icon-btn {
+    margin: 0;
 }
 
 .filter-label {
