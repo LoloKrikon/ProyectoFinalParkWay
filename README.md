@@ -110,4 +110,4 @@ ProyectoFinalParkWay/
 ---
 
 ## 📄 Licencia
-Este proyecto es un prototipo educativo. El uso de los mapas está sujeto a las licencias de OpenStreetMap y CartoDB.
+Este proyecto es un prototipo BETA. El uso de los mapas está sujeto a las licencias de OpenStreetMap y CartoDB.
