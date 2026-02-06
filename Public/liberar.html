@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <!-- Configuración para la página de liberar plaza -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ParkWay - Dejar Sitio Libre</title>
+
+    <!-- Leaflet CSS (Mapas) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+
+    <!-- Fuentes Google: Outfit -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+
+    <!-- Estilos Principales -->
+    <link rel="stylesheet" href="css/styles.css">
+
+    <!-- Iconos FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Control de Transiciones (Fade In/Out) -->
+    <script src="js/transitions.js" defer></script>
+
+
+</head>
+
+<body>
+    <section class="view">
+        <!-- Barra de navegación común -->
+        <header class="app-header"
+            style="margin-bottom: 0; padding: 1rem 2rem; border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.2);">
+            <!-- Logo Izquierda -->
+            <div class="header-left">
+                <h2 class="mini-logo">ParkWay <span
+                        style="font-size: 0.5em; opacity: 0.6; vertical-align: middle; border: 1px solid rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 4px;">BETA</span>
+                </h2>
+            </div>
+
+            <div class="header-right">
+                <!-- Botón Perfil -->
+                <a href="perfil.html" class="secondary-btn" title="Mi Perfil"
+                    style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-user"></i> Ver perfil
+                </a>
+
+                <!-- Botón Volver -->
+                <a href="plataformas.html" class="icon-btn" title="Volver">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </a>
+            </div>
+        </header>
+
+        <div class="map-layout">
+            <!-- PANEL LATERAL: Confirmación de acción -->
+            <div class="map-panel">
+                <h2>🅿️ Liberar Plaza</h2>
+
+                <div class="map-input-group">
+                    <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 20px; line-height: 1.5;">
+                        ¿Vas a salir? Confirma tu ubicación para avisar a otros conductores y ayudar a la comunidad
+                        ParkWay.
+                    </p>
+
+                    <!-- Botón de Acción Principal: Liberar -->
+                    <button id="btn-liberar" onclick="liberarPlaza()" class="primary-btn"
+                        style="width: 100%; padding: 14px; background: linear-gradient(135deg, #10b981, #059669); font-weight: bold; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); margin-bottom: 15px;">
+                        <i class="fa-solid fa-share-from-square"></i> Liberar mi sitio aquí
+                    </button>
+
+                    <!-- Área de mensajes de estado (éxito/error) -->
+                    <div id="statusMessage" class="feedback-message"></div>
+                </div>
+
+                <!-- Info Box -->
+                <div
+                    style="margin-top: 30px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px; font-size: 0.85rem; color: #aaa;">
+                    <i class="fa-solid fa-circle-info"></i>
+                    Al liberar tu plaza ganas puntos de comunidad. ¡Gracias por colaborar!
+                </div>
+            </div>
+
+            <!-- CONTENEDOR DEL MAPA -->
+            <div class="map-container">
+                <div id="map"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SCRIPTS LEAFLET -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
+
+    <!-- LÓGICA JAVASCRIPT (Extraída) -->
+    <script type="module" src="js/liberar-map.js?v=2"></script>
+</body>
+
+</html>

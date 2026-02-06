@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <!-- Configuración del título de la página -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ParkWay - Panel Principal</title>
+
+    <!-- Fuentes Google: Outfit -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+
+    <!-- Estilos Principales -->
+    <link rel="stylesheet" href="css/styles.css">
+
+    <!-- Iconos FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Control de Transiciones (Fade In/Out) -->
+    <script src="js/transitions.js" defer></script>
+</head>
+
+<body>
+    <section id="platform-view" class="view">
+        <!-- Barra de navegación. (Perfil y Logout habilitados) -->
+        <header class="app-header"
+            style="margin-bottom: 0; padding: 1rem 2rem; border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.2);">
+            <!-- Logo Izquierda -->
+            <div class="header-left">
+                <h2 class="mini-logo">ParkWay <span
+                        style="font-size: 0.5em; opacity: 0.6; vertical-align: middle; border: 1px solid rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 4px;">BETA</span>
+                </h2>
+            </div>
+
+            <div class="header-right">
+                <!-- Botón Perfil -->
+                <a href="perfil.html" class="secondary-btn" title="Mi Perfil"
+                    style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-user"></i> Ver perfil
+                </a>
+
+                <!-- Botón Cerrar Sesión -->
+                <button id="logout-btn" class="secondary-btn"
+                    style="background: rgba(0,0,0,0.5); border-color: rgba(255,255,255,0.2);">
+                    <i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión
+                </button>
+            </div>
+        </header>
+
+        <div class="landing-content">
+            <!-- Título principal de la sección -->
+            <h2 style="font-size: 2.5rem; margin-bottom: 2rem; font-weight: 600;">¿Qué necesitas hoy?</h2>
+
+            <!-- GRID DE SELECCIÓN DE FUNCIONALIDAD -->
+            <div class="platforms-grid" style="grid-template-columns: repeat(2, 1fr); max-width: 600px; gap: 20px;">
+
+                <!-- Opción 1: Buscar Aparcamiento -->
+                <a href="buscar.html" class="platform-card"
+                    style="text-decoration: none; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; aspect-ratio: 1/1; transition: transform 0.2s;">
+                    <div class="platform-icon" style="font-size: 4rem; margin-bottom: 1rem;">
+                        <i class="fa-solid fa-magnifying-glass-location"></i>
+                    </div>
+                    <h3>Buscar Plaza</h3>
+                </a>
+
+                <!-- Opción 2: Liberar Aparcamiento -->
+                <a href="liberar.html" class="platform-card"
+                    style="text-decoration: none; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; aspect-ratio: 1/1; transition: transform 0.2s;">
+                    <div class="platform-icon" style="font-size: 4rem; margin-bottom: 1rem;">
+                        <i class="fa-solid fa-car-side"></i>
+                    </div>
+                    <h3>Liberar Plaza</h3>
+                </a>
+
+            </div>
+        </div>
+
+        <!-- Elemento decorativo de fondo -->
+        <div class="background-ambient"></div>
+    </section>
+
+    <!-- LÓGICA DE AUTENTICACIÓN Y SESIÓN -->
+    <script type="module">
+        import { auth } from './js/firebase-config.js';
+        import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        // Comprobación de acceso: ¿Es invitado o usuario registrado?
+        const isGuest = localStorage.getItem('omnilog_guest');
+
+        // Monitor de estado de autenticación
+        onAuthStateChanged(auth, (user) => {
+            // Si no hay usuario y no es invitado, redirigir al login por seguridad
+            if (!user && !isGuest) {
+                window.location.href = 'logeo.html';
+            }
+        });
+
+        // Manejador del botón de cerrar sesión
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', async () => {
+                const confirmLogout = confirm("¿Seguro que quieres cerrar sesión?");
+                if (!confirmLogout) return;
+
+                try {
+                    await signOut(auth); // Desconectar de Firebase
+                } catch (error) {
+                    console.error("Error al cerrar sesión:", error);
+                } finally {
+                    localStorage.removeItem('omnilog_guest'); // Limpiar flag local
+                    window.location.href = 'logeo.html'; // Redirigir
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,93 @@
+/* Estilos para la barra de búsqueda alternativa */
+.search-input-alt {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 12px;
+    border-radius: 8px;
+    color: white;
+    width: 100%;
+    outline: none;
+}
+
+.search-input-alt:focus {
+    border-color: var(--accent-main);
+}
+
+/* Ocultar el contenedor de control por defecto de Leaflet si es necesario o estilizarlo */
+.leaflet-control-container .leaflet-routing-container-hide {
+    display: none;
+}
+
+/* Cruceta central (Crosshair) */
+.center-crosshair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 1000;
+    display: none;
+    /* Oculto por defecto */
+}
+
+.center-crosshair::before,
+.center-crosshair::after {
+    content: '';
+    position: absolute;
+    background: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+}
+
+.center-crosshair::before {
+    top: 9px;
+    left: 0;
+    width: 20px;
+    height: 2px;
+    /* Horizontal */
+}
+
+.center-crosshair::after {
+    top: 0;
+    left: 9px;
+    width: 2px;
+    height: 20px;
+    /* Vertical */
+}
+
+/* Controles Flotantes */
+.floating-controls {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 15px;
+    z-index: 1000;
+}
+
+.float-btn {
+    background: rgba(30, 30, 30, 0.9);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 10px 20px;
+    border-radius: 50px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    transition: all 0.3s;
+}
+
+.float-btn:hover {
+    background: var(--accent-main);
+    transform: translateY(-2px);
+}
+
+.float-btn.active {
+    background: var(--accent-main);
+    border-color: var(--accent-main);
+}
